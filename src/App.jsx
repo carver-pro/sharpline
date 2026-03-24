@@ -105,13 +105,6 @@ function getSportColor(sport) {
 
 function isNeutralSite(game) {
   const label = (game.label || "").toLowerCase();
-  
-  // NIT early rounds are home games — only semifinals and finals are neutral
-  if (label.includes("nit")) {
-    return label.includes("final") || label.includes("semifinal") || label.includes("championship");
-  }
-  
-  // Everything else — NCAA Tournament, bowl games, championships
   return label.includes("neutral") || label.includes("tournament") ||
     label.includes("bowl") || label.includes("final") || label.includes("championship");
 }
@@ -585,6 +578,11 @@ export default function SharplineApp() {
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         .live-pulse { animation: pulse 2s ease-in-out infinite; }
+        html, body { background-color: #030c1a; margin: 0; padding: 0; }
+        @media (min-width: 640px) {
+          .game-list-panel { display: block !important; width: 340px !important; max-width: 340px !important; flex-shrink: 0 !important; }
+          .analysis-panel { flex: 1 !important; }
+        }
       `}</style>
 
       <header style={{
@@ -691,8 +689,9 @@ export default function SharplineApp() {
           width: 340, borderRight: `1px solid ${t.border}`,
           overflowY: "auto", flexShrink: 0,
           display: mobileShowPanel ? "none" : "block", background: t.bg,
-        }}>
-          <style>{`@media (min-width: 640px) { .game-list-panel { display: block !important; } }`}</style>
+        }}
+          className="game-list-panel"
+        >
           {displayed.length === 0 ? (
             <div style={{ padding: 40, textAlign: "center", lineHeight: 1.8 }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>📡</div>
@@ -708,7 +707,7 @@ export default function SharplineApp() {
           ))}
         </div>
 
-        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", background: t.bg }}>
+        <div className="analysis-panel" style={{ flex: 1, overflow: "hidden", display: mobileShowPanel || !selectedGame ? "flex" : "flex", flexDirection: "column", background: t.bg, width: mobileShowPanel ? "100%" : "auto" }}>
           {mobileShowPanel && (
             <button
               onClick={() => { setMobileShowPanel(false); setSelectedGame(null); }}
@@ -723,7 +722,7 @@ export default function SharplineApp() {
           )}
           {selectedGame ? (
             <AnalysisPanel key={selectedGame.id} game={selectedGame} onClose={() => { setSelectedGame(null); setMobileShowPanel(false); }} t={t} />
-          ) : (
+          ) : !mobileShowPanel && (
             <div style={{
               flex: 1, display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
