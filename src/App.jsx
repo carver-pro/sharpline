@@ -60,6 +60,7 @@ const THEMES = {
     bg: "#020810", bgHeader: "#030c1a", bgCard: "#0a1628",
     bgCardHover: "#070d1a", bgInput: "#0a1220", bgStat: "#0a0f1a",
     bgAnalysis: "#070f1e", bgButton: "#0a1220", bgButtonActive: "#1e3a5f",
+    bgModal: "#0a1628",
     border: "#1e2a3a", borderHeader: "#0f172a", borderStat: "#0f172a",
     borderStatHi: "#1e3a5f", borderInput: "#1f2937",
     text: "#f9fafb", textSub: "#6b7280", textMuted: "#9ca3af",
@@ -68,11 +69,13 @@ const THEMES = {
     rlmBg: "#f59e0b0f", rlmBorder: "#f59e0b33",
     statBg: "#0a1220", statBorder: "#111827",
     emptyText: "#9ca3af", emptySubText: "#6b7280", scrollThumb: "#1f2937",
+    overlay: "rgba(0,0,0,0.75)",
   },
   light: {
     bg: "#fdf8f0", bgHeader: "#ffffff", bgCard: "#fef9f2",
     bgCardHover: "#fdf3e3", bgInput: "#fdf8f0", bgStat: "#fef9f2",
     bgAnalysis: "#fffbf5", bgButton: "#f5ede0", bgButtonActive: "#dbeafe",
+    bgModal: "#ffffff",
     border: "#e8ddd0", borderHeader: "#e8ddd0", borderStat: "#e8ddd0",
     borderStatHi: "#93c5fd", borderInput: "#d1c4b0",
     text: "#1a1208", textSub: "#5c4a2a", textMuted: "#7c6545",
@@ -81,6 +84,7 @@ const THEMES = {
     rlmBg: "#fef3c7", rlmBorder: "#fcd34d",
     statBg: "#fef3e2", statBorder: "#e8ddd0",
     emptyText: "#5c4a2a", emptySubText: "#7c6545", scrollThumb: "#d1c4b0",
+    overlay: "rgba(0,0,0,0.5)",
   }
 };
 
@@ -105,6 +109,9 @@ function getSportColor(sport) {
 
 function isNeutralSite(game) {
   const label = (game.label || "").toLowerCase();
+  if (label.includes("nit")) {
+    return label.includes("final") || label.includes("semifinal") || label.includes("championship");
+  }
   return label.includes("neutral") || label.includes("tournament") ||
     label.includes("bowl") || label.includes("final") || label.includes("championship");
 }
@@ -169,9 +176,8 @@ function MoveBadge({ game, t }) {
   if (size < 0.5) return <span style={{ fontSize: 10, color: t.textFaint, fontFamily: "'Inter', sans-serif" }}>STABLE</span>;
   if (rlm) return (
     <span style={{
-      fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-      color: "#d97706", background: "#fef3c7", border: "1px solid #fcd34d",
-      padding: "2px 7px", borderRadius: 3, fontFamily: "'Inter', sans-serif",
+      fontSize: 10, fontWeight: 700, color: "#d97706", background: "#fef3c7",
+      border: "1px solid #fcd34d", padding: "2px 7px", borderRadius: 3, fontFamily: "'Inter', sans-serif",
     }}>⚡ RLM</span>
   );
   return (
@@ -201,7 +207,7 @@ function PublicMeter({ pct, homeTeam, t }) {
   );
 }
 
-function GameCard({ game, selected, onSelect, t }) {
+function GameCard({ game, onSelect, t }) {
   const rlm = getRLM(game);
   const sportColor = getSportColor(game.sport);
   const [hovered, setHovered] = useState(false);
@@ -212,8 +218,8 @@ function GameCard({ game, selected, onSelect, t }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: "14px 16px", borderBottom: `1px solid ${t.border}`,
-        borderLeft: `3px solid ${selected ? sportColor : "transparent"}`,
-        background: selected ? t.bgCard : hovered ? t.bgCardHover : "transparent",
+        borderLeft: `3px solid ${hovered ? sportColor : "transparent"}`,
+        background: hovered ? t.bgCardHover : "transparent",
         cursor: "pointer", transition: "all 0.15s ease",
       }}
     >
@@ -262,14 +268,14 @@ function FormattedAnalysis({ content, t }) {
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       {lines.map((line, i) => {
         const trimmed = line.trim();
-        if (!trimmed) return <div key={i} style={{ height: 10 }} />;
+        if (!trimmed) return <div key={i} style={{ height: 8 }} />;
         const isHeader = /^(\d+\.|[A-Z\s]{4,})\s*[—-]/.test(trimmed) || /^[A-Z\s]{6,}:/.test(trimmed);
         if (isHeader) {
           return (
             <div key={i} style={{
-              fontSize: 11, fontWeight: 700, color: "#2563eb",
+              fontSize: 10, fontWeight: 700, color: "#2563eb",
               letterSpacing: "0.08em", textTransform: "uppercase",
-              marginTop: 16, marginBottom: 6,
+              marginTop: 14, marginBottom: 5,
               paddingBottom: 4, borderBottom: `1px solid ${t.border}`,
             }}>{trimmed}</div>
           );
@@ -278,8 +284,8 @@ function FormattedAnalysis({ content, t }) {
         if (isEdge) {
           return (
             <div key={i} style={{
-              fontSize: 14, fontWeight: 700, color: "#d97706",
-              marginTop: 16, marginBottom: 6, padding: "8px 12px",
+              fontSize: 13, fontWeight: 700, color: "#d97706",
+              marginTop: 14, marginBottom: 5, padding: "8px 12px",
               background: t.rlmBg, border: `1px solid ${t.rlmBorder}`, borderRadius: 6,
             }}>{trimmed}</div>
           );
@@ -288,8 +294,8 @@ function FormattedAnalysis({ content, t }) {
         if (isNeutralAlert) {
           return (
             <div key={i} style={{
-              fontSize: 13, fontWeight: 600, color: "#7c3aed",
-              marginTop: 8, marginBottom: 4, padding: "6px 10px",
+              fontSize: 12, fontWeight: 600, color: "#7c3aed",
+              marginTop: 6, marginBottom: 4, padding: "5px 10px",
               background: "#7c3aed0d", border: "1px solid #7c3aed22", borderRadius: 5,
             }}>{trimmed}</div>
           );
@@ -297,8 +303,8 @@ function FormattedAnalysis({ content, t }) {
         if (trimmed.startsWith("-") || trimmed.startsWith("•")) {
           return (
             <div key={i} style={{
-              fontSize: 14, color: t.textAnalysis, lineHeight: 1.75,
-              paddingLeft: 16, marginBottom: 4, position: "relative",
+              fontSize: 13, color: t.textAnalysis, lineHeight: 1.7,
+              paddingLeft: 14, marginBottom: 3, position: "relative",
             }}>
               <span style={{ position: "absolute", left: 0, color: "#3b82f6" }}>›</span>
               {trimmed.slice(1).trim()}
@@ -306,7 +312,7 @@ function FormattedAnalysis({ content, t }) {
           );
         }
         return (
-          <div key={i} style={{ fontSize: 14, color: t.textAnalysis, lineHeight: 1.85, marginBottom: 4 }}>
+          <div key={i} style={{ fontSize: 13, color: t.textAnalysis, lineHeight: 1.8, marginBottom: 3 }}>
             {trimmed}
           </div>
         );
@@ -315,7 +321,8 @@ function FormattedAnalysis({ content, t }) {
   );
 }
 
-function AnalysisPanel({ game, onClose, t }) {
+// ── MODAL COMPONENT ──
+function AnalysisModal({ game, onClose, t }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -375,96 +382,140 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
   const sportColor = getSportColor(game.sport);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: t.bg }}>
-      <div style={{ padding: "14px 18px", borderBottom: `1px solid ${t.borderHeader}`, background: t.bgHeader, flexShrink: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
-              <SportBadge sport={game.sport} />
-              <span style={{ fontSize: 9, color: t.textFaint, fontFamily: "'Inter', sans-serif" }}>{game.label} · {game.time}</span>
+    // Overlay — tap outside to close
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: t.overlay,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "16px",
+        animation: "fadeIn 0.2s ease",
+      }}
+    >
+      {/* Modal box — stop click from bubbling to overlay */}
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 520,
+          maxHeight: "88vh",
+          background: t.bgModal,
+          borderRadius: 16,
+          border: `1px solid ${t.border}`,
+          display: "flex", flexDirection: "column",
+          overflow: "hidden",
+          boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
+          animation: "slideUp 0.25s ease",
+        }}
+      >
+        {/* Modal header */}
+        <div style={{
+          padding: "14px 16px", borderBottom: `1px solid ${t.border}`,
+          background: t.bgHeader, flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+            <div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
+                <SportBadge sport={game.sport} />
+                <span style={{ fontSize: 9, color: t.textFaint, fontFamily: "'Inter', sans-serif" }}>{game.label} · {game.time}</span>
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: t.text, fontFamily: "'Inter', sans-serif" }}>
+                {game.awayTeam}
+                <span style={{ color: t.textFaint, margin: "0 6px", fontWeight: 400 }}>@</span>
+                <span style={{ color: sportColor }}>{game.homeTeam}</span>
+              </div>
+              <ContextBadge game={game} />
             </div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: t.text, fontFamily: "'Inter', sans-serif" }}>
-              {game.awayTeam}
-              <span style={{ color: t.textFaint, margin: "0 8px", fontWeight: 400 }}>@</span>
-              <span style={{ color: sportColor }}>{game.homeTeam}</span>
-            </div>
-            <ContextBadge game={game} />
+            <button
+              onClick={onClose}
+              style={{
+                background: t.bgButton, border: `1px solid ${t.border}`,
+                color: t.textMuted, borderRadius: 20, width: 28, height: 28,
+                cursor: "pointer", fontSize: 13, fontFamily: "'Inter', sans-serif",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0, marginLeft: 8,
+              }}
+            >✕</button>
           </div>
-          <button onClick={onClose} style={{
-            background: t.bgButton, border: `1px solid ${t.border}`, color: t.textMuted,
-            borderRadius: 4, padding: "4px 10px", cursor: "pointer", fontSize: 11, fontFamily: "'Inter', sans-serif",
-          }}>✕</button>
+
+          {/* Quick stats */}
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {[
+              { label: "Open", val: fmt(game.openSpread) },
+              { label: "Current", val: fmt(game.currentSpread), color: "#2563eb" },
+              { label: "Move", val: fmt(game.currentSpread - game.openSpread), color: Math.abs(game.currentSpread - game.openSpread) >= 1.5 ? "#d97706" : t.textMuted },
+              { label: "Total", val: game.total },
+              { label: "Public", val: `${game.publicPct}%`, color: game.publicPct > 65 ? "#ef4444" : t.textMuted },
+            ].map(s => (
+              <div key={s.label} style={{
+                background: t.statBg, border: `1px solid ${t.statBorder}`,
+                borderRadius: 4, padding: "3px 8px",
+              }}>
+                <span style={{ fontSize: 8, color: t.textFaint, marginRight: 4, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Inter', sans-serif" }}>{s.label}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: s.color || t.text, fontFamily: "'Inter', sans-serif" }}>{s.val}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-          {[
-            { label: "Open", val: fmt(game.openSpread) },
-            { label: "Current", val: fmt(game.currentSpread), color: "#2563eb" },
-            { label: "Move", val: fmt(game.currentSpread - game.openSpread), color: Math.abs(game.currentSpread - game.openSpread) >= 1.5 ? "#d97706" : t.textMuted },
-            { label: "Total", val: game.total },
-            { label: "Public", val: `${game.publicPct}%`, color: game.publicPct > 65 ? "#ef4444" : t.textMuted },
-          ].map(s => (
-            <div key={s.label} style={{ background: t.statBg, border: `1px solid ${t.statBorder}`, borderRadius: 4, padding: "4px 10px" }}>
-              <span style={{ fontSize: 9, color: t.textFaint, marginRight: 5, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Inter', sans-serif" }}>{s.label}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: s.color || t.text, fontFamily: "'Inter', sans-serif" }}>{s.val}</span>
+
+        {/* Scrollable analysis content */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", background: t.bg }}>
+          {messages.length === 0 && !loading && (
+            <div style={{ textAlign: "center", color: t.textMuted, marginTop: 30 }}>
+              <div style={{ fontSize: 24, marginBottom: 6 }}>🎯</div>
+              <div style={{ fontSize: 12, fontFamily: "'Inter', sans-serif" }}>Loading analysis...</div>
+            </div>
+          )}
+          {messages.filter(m => m.role === "assistant").map((m, i) => (
+            <div key={i} style={{
+              background: t.bgAnalysis, border: `1px solid ${t.borderHeader}`,
+              borderRadius: 8, padding: "12px 14px", marginBottom: 12,
+            }}>
+              <FormattedAnalysis content={m.content} t={t} />
             </div>
           ))}
+          {loading && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, color: t.textMuted, padding: "8px 0" }}>
+              <Spinner t={t} />
+              <span style={{ fontSize: 12, fontFamily: "'Inter', sans-serif" }}>Analyzing matchup data...</span>
+            </div>
+          )}
+          <div ref={bottomRef} />
         </div>
-      </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px", background: t.bg }}>
-        {messages.length === 0 && !loading && (
-          <div style={{ textAlign: "center", color: t.textMuted, marginTop: 40 }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>🎯</div>
-            <div style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>Loading analysis...</div>
+        {/* Follow-up input */}
+        <div style={{
+          padding: "10px 14px", borderTop: `1px solid ${t.border}`,
+          background: t.bgHeader, flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", gap: 8 }}>
+            <textarea
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder="Ask a follow-up — e.g. 'Fade the public angle?' or 'How does pace affect the total?'"
+              rows={2}
+              style={{
+                flex: 1, background: t.bgInput, border: `1px solid ${t.borderInput}`,
+                borderRadius: 6, padding: "8px 10px", color: t.text,
+                fontSize: 13, fontFamily: "'Inter', sans-serif",
+                resize: "none", outline: "none", lineHeight: 1.5,
+              }}
+              onFocus={e => e.target.style.borderColor = "#3b82f6"}
+              onBlur={e => e.target.style.borderColor = t.borderInput}
+            />
+            <button
+              onClick={handleSend}
+              disabled={loading || !input.trim()}
+              style={{
+                padding: "0 14px", borderRadius: 6, border: "none",
+                background: loading || !input.trim() ? t.bgButton : "#2563eb",
+                color: loading || !input.trim() ? t.textFaint : "#fff",
+                fontSize: 16, cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+                transition: "all 0.15s",
+              }}
+            >→</button>
           </div>
-        )}
-        {messages.filter(m => m.role === "assistant").map((m, i) => (
-          <div key={i} style={{
-            background: t.bgAnalysis, border: `1px solid ${t.borderHeader}`,
-            borderRadius: 8, padding: "16px 18px", marginBottom: 14,
-          }}>
-            <FormattedAnalysis content={m.content} t={t} />
-          </div>
-        ))}
-        {loading && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, color: t.textMuted, padding: "8px 0" }}>
-            <Spinner t={t} />
-            <span style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>Analyzing matchup data...</span>
-          </div>
-        )}
-        <div ref={bottomRef} />
-      </div>
-
-      <div style={{ padding: "12px 16px", borderTop: `1px solid ${t.borderHeader}`, background: t.bgHeader, flexShrink: 0 }}>
-        <div style={{ fontSize: 10, color: t.textFaint, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
-          Ask a follow-up — e.g. "Does neutral site affect the total?" or "What does KenPom say about this matchup?"
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="Your question..."
-            rows={2}
-            style={{
-              flex: 1, background: t.bgInput, border: `1px solid ${t.borderInput}`,
-              borderRadius: 6, padding: "10px 12px", color: t.text,
-              fontSize: 14, fontFamily: "'Inter', sans-serif", resize: "none", outline: "none", lineHeight: 1.6,
-            }}
-            onFocus={e => e.target.style.borderColor = "#3b82f6"}
-            onBlur={e => e.target.style.borderColor = t.borderInput}
-          />
-          <button
-            onClick={handleSend}
-            disabled={loading || !input.trim()}
-            style={{
-              padding: "0 18px", borderRadius: 6, border: "none",
-              background: loading || !input.trim() ? t.bgButton : "#2563eb",
-              color: loading || !input.trim() ? t.textFaint : "#fff",
-              fontSize: 18, cursor: loading || !input.trim() ? "not-allowed" : "pointer",
-              transition: "all 0.15s",
-            }}
-          >→</button>
         </div>
       </div>
     </div>
@@ -478,10 +529,15 @@ export default function SharplineApp() {
   const [view, setView] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [fetching, setFetching] = useState(false);
-  const [mobileShowPanel, setMobileShowPanel] = useState(false);
-  const [isDark, setIsDark] = useState(true);  useEffect(() => {   const color = isDark ? "#030c1a" : "#ffffff";   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", color);   document.body.style.backgroundColor = isDark ? "#030c1a" : "#fdf8f0"; }, [isDark]);
+  const [isDark, setIsDark] = useState(true);
 
   const t = isDark ? THEMES.dark : THEMES.light;
+
+  useEffect(() => {
+    const color = isDark ? "#030c1a" : "#ffffff";
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", color);
+    document.body.style.backgroundColor = isDark ? "#030c1a" : "#fdf8f0";
+  }, [isDark]);
 
   const loadGames = useCallback(async () => {
     setFetching(true);
@@ -510,37 +566,25 @@ export default function SharplineApp() {
           );
           const data = await res.json();
           if (!Array.isArray(data)) { console.error(`${sport.label} API error:`, data); continue; }
-
           data.slice(0, 20).forEach(g => {
-            // Get consensus spread across all available books
             const allSpreads = [];
             g.bookmakers?.forEach(book => {
               const spreadMkt = book.markets?.find(m => m.key === "spreads");
               const homePoint = spreadMkt?.outcomes?.find(o => o.name === g.home_team)?.point;
               if (homePoint !== undefined) allSpreads.push(homePoint);
             });
-
             const homeSpread = allSpreads.length > 0
-              ? allSpreads.reduce((a, b) => a + b, 0) / allSpreads.length
-              : 0;
-
+              ? allSpreads.reduce((a, b) => a + b, 0) / allSpreads.length : 0;
             const firstBook = g.bookmakers?.[0];
             const totalMkt = firstBook?.markets?.find(m => m.key === "totals");
             const total = totalMkt?.outcomes?.[0]?.point ?? (sport.label === "MLB" ? 8.5 : 220);
-
-            // Detect neutral site from commence_time venue or title if available
-            const isNCAAT = sport.label === "NCAAB" &&
-              new Date(g.commence_time) > new Date("2025-03-18");
-
+            const isNCAAT = sport.label === "NCAAB" && new Date(g.commence_time) > new Date("2025-03-18");
             allGames.push({
-              id: g.id,
-              sport: sport.label,
-              homeTeam: g.home_team,
-              awayTeam: g.away_team,
+              id: g.id, sport: sport.label,
+              homeTeam: g.home_team, awayTeam: g.away_team,
               openSpread: parseFloat((homeSpread + (Math.random() > 0.5 ? 0.5 : -0.5)).toFixed(1)),
               currentSpread: parseFloat(homeSpread.toFixed(1)),
-              total,
-              publicPct: Math.floor(Math.random() * 45) + 30,
+              total, publicPct: Math.floor(Math.random() * 45) + 30,
               time: new Date(g.commence_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" }),
               label: isNCAAT ? "NCAA Tournament — Neutral Site" : sport.label === "MLB" ? "MLB Regular Season" : sport.label,
             });
@@ -558,19 +602,21 @@ export default function SharplineApp() {
 
   useEffect(() => { loadGames(); }, [loadGames]);
   useEffect(() => {
-    const interval = setInterval(loadGames, 1800000); // 30 minutes
+    const interval = setInterval(loadGames, 1800000);
     return () => clearInterval(interval);
   }, [loadGames]);
 
-  const handleSelectGame = (game) => { setSelectedGame(game); setMobileShowPanel(true); };
   const rlmCount = games.filter(getRLM).length;
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const displayed = games
     .filter(g => view === "rlm" ? getRLM(g) : true)
     .filter(g => sportFilter === "ALL" || g.sport === sportFilter);
 
   return (
-    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", background: t.bg, fontFamily: "'IBM Plex Mono', monospace", color: t.text, overflow: "hidden", transition: "background 0.3s ease" }}>
+    <div style={{
+      height: "100dvh", display: "flex", flexDirection: "column",
+      background: t.bg, fontFamily: "'IBM Plex Mono', monospace",
+      color: t.text, overflow: "hidden", transition: "background 0.3s ease",
+    }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -578,14 +624,13 @@ export default function SharplineApp() {
         ::-webkit-scrollbar-thumb { background: ${t.scrollThumb}; border-radius: 2px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+        @keyframes slideUp { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
         .live-pulse { animation: pulse 2s ease-in-out infinite; }
         html, body { background-color: #030c1a; margin: 0; padding: 0; }
-        @media (min-width: 640px) {
-          .game-list-panel { display: block !important; width: 340px !important; max-width: 340px !important; flex-shrink: 0 !important; }
-          .analysis-panel { flex: 1 !important; }
-        }
       `}</style>
 
+      {/* ── HEADER ── */}
       <header style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "10px 20px", borderBottom: `1px solid ${t.borderHeader}`,
@@ -615,11 +660,10 @@ export default function SharplineApp() {
             <span style={{ fontSize: 8, color: "#d97706", letterSpacing: "0.12em", border: "1px solid #fcd34d", padding: "1px 6px", borderRadius: 2, fontFamily: "'Inter', sans-serif" }}>DEMO</span>
           )}
         </div>
-
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {rlmCount > 0 && (
             <div
-              onClick={() => { setView("rlm"); setSelectedGame(null); setMobileShowPanel(false); }}
+              onClick={() => { setView("rlm"); setSelectedGame(null); }}
               style={{
                 fontSize: 10, color: "#d97706", fontWeight: 700,
                 background: t.rlmBg, border: `1px solid ${t.rlmBorder}`,
@@ -636,7 +680,6 @@ export default function SharplineApp() {
               fontSize: 13, display: "flex", alignItems: "center",
               color: t.textMuted, transition: "all 0.2s",
             }}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
           >{isDark ? "☀️" : "🌙"}</button>
           <button
             onClick={loadGames}
@@ -657,6 +700,7 @@ export default function SharplineApp() {
         </div>
       </header>
 
+      {/* ── FILTER BAR ── */}
       <div style={{
         display: "flex", alignItems: "center", gap: 6,
         padding: "8px 16px", borderBottom: `1px solid ${t.border}`,
@@ -664,7 +708,7 @@ export default function SharplineApp() {
       }}>
         <div style={{ display: "flex", gap: 4, marginRight: 6 }}>
           {[["all", "All Games"], ["rlm", `⚡ RLM (${rlmCount})`]].map(([v, label]) => (
-            <button key={v} onClick={() => { setView(v); setSelectedGame(null); setMobileShowPanel(false); }} style={{
+            <button key={v} onClick={() => { setView(v); setSelectedGame(null); }} style={{
               padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
               fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: "0.04em",
               cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s",
@@ -675,7 +719,7 @@ export default function SharplineApp() {
         </div>
         <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }} />
         {["ALL", "NCAAB", "NBA", "NFL", "MLB"].map(s => (
-          <button key={s} onClick={() => { setSportFilter(s); setSelectedGame(null); setMobileShowPanel(false); }} style={{
+          <button key={s} onClick={() => { setSportFilter(s); setSelectedGame(null); }} style={{
             padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
             fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: "0.06em",
             cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s",
@@ -685,65 +729,37 @@ export default function SharplineApp() {
         ))}
       </div>
 
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Game list — full width on mobile when no game selected, 340px on desktop */}
-        <div style={{
-          width: isMobile ? "100%" : 340,
-          borderRight: isMobile ? "none" : `1px solid ${t.border}`,
-          overflowY: "auto", flexShrink: 0,
-          display: (isMobile && mobileShowPanel) ? "none" : "block",
-          background: t.bg,
-        }}>
-          {displayed.length === 0 ? (
-            <div style={{ padding: 40, textAlign: "center", lineHeight: 1.8 }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>📡</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: t.emptyText, fontFamily: "'Inter', sans-serif", marginBottom: 6 }}>
-                {view === "rlm" ? "No RLM Signals Right Now" : "No Games Found"}
-              </div>
-              <div style={{ fontSize: 12, color: t.emptySubText, fontFamily: "'Inter', sans-serif" }}>
-                {view === "rlm" ? "Check back as lines update — signals appear when sharp money moves against the public." : "Try selecting a different sport or check back later."}
-              </div>
+      {/* ── GAME LIST (full width, always visible) ── */}
+      <div style={{ flex: 1, overflowY: "auto", background: t.bg }}>
+        {displayed.length === 0 ? (
+          <div style={{ padding: 40, textAlign: "center", lineHeight: 1.8 }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>📡</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: t.emptyText, fontFamily: "'Inter', sans-serif", marginBottom: 6 }}>
+              {view === "rlm" ? "No RLM Signals Right Now" : "No Games Found"}
             </div>
-          ) : displayed.map(game => (
-            <GameCard key={game.id} game={game} selected={selectedGame?.id === game.id} onSelect={handleSelectGame} t={t} />
-          ))}
-        </div>
-
-        {/* Analysis panel — hidden on mobile until game selected, flex on desktop */}
-        {(!isMobile || mobileShowPanel) && (
-          <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", background: t.bg }}>
-            {mobileShowPanel && (
-              <button
-                onClick={() => { setMobileShowPanel(false); setSelectedGame(null); }}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "8px 14px", background: t.bgHeader,
-                  border: "none", borderBottom: `1px solid ${t.borderHeader}`,
-                  color: t.textMuted, fontSize: 12, cursor: "pointer",
-                  fontFamily: "'Inter', sans-serif", letterSpacing: "0.04em",
-                }}
-              >← Back to Games</button>
-            )}
-            {selectedGame ? (
-              <AnalysisPanel key={selectedGame.id} game={selectedGame} onClose={() => { setSelectedGame(null); setMobileShowPanel(false); }} t={t} />
-            ) : (
-              <div style={{
-                flex: 1, display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center",
-                gap: 14, padding: 32, textAlign: "center", background: t.bg,
-              }}>
-                <div style={{ fontSize: 48 }}>📡</div>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 26, fontWeight: 900, letterSpacing: "0.1em", color: t.emptyText, textTransform: "uppercase" }}>
-                  SELECT A GAME TO ANALYZE
-                </div>
-                <div style={{ fontSize: 14, color: t.emptySubText, maxWidth: 320, lineHeight: 1.75, fontFamily: "'Inter', sans-serif" }}>
-                  Tap any game to get a full AI-powered sharp analysis including line movement signals, public bias, neutral site detection, and edge summary.
-                </div>
-              </div>
-            )}
+            <div style={{ fontSize: 12, color: t.emptySubText, fontFamily: "'Inter', sans-serif" }}>
+              {view === "rlm" ? "Check back as lines update — signals appear when sharp money moves against the public." : "Try selecting a different sport or check back later."}
+            </div>
           </div>
-        )}
+        ) : displayed.map(game => (
+          <GameCard
+            key={game.id}
+            game={game}
+            onSelect={setSelectedGame}
+            t={t}
+          />
+        ))}
       </div>
+
+      {/* ── MODAL (rendered over everything when a game is selected) ── */}
+      {selectedGame && (
+        <AnalysisModal
+          key={selectedGame.id}
+          game={selectedGame}
+          onClose={() => setSelectedGame(null)}
+          t={t}
+        />
+      )}
     </div>
   );
 }
