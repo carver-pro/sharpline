@@ -529,7 +529,7 @@ export default function SharplineApp() {
   const [view, setView] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [fetching, setFetching] = useState(false);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   const t = isDark ? THEMES.dark : THEMES.light;
 
