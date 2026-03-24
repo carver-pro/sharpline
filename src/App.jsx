@@ -513,7 +513,7 @@ export default function SharplineApp() {
       }}>
         <div style={{ display: "flex", gap: 4, marginRight: 8 }}>
           {[["all", "All Games"], ["watchlist", `★ Watchlist (${watchlist.size})`]].map(([v, label]) => (
-            <button key={v} onClick={() => setView(v)} style={{
+            <button key={v} onClick={() => { setView(v); setSelectedGame(null); setMobileShowPanel(false); }} style={{
               padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
               fontFamily: "inherit", fontWeight: 600, letterSpacing: "0.06em",
               cursor: "pointer", whiteSpace: "nowrap",
@@ -524,7 +524,7 @@ export default function SharplineApp() {
         </div>
         <div style={{ width: 1, height: 16, background: "#0f172a" }} />
         {sports.map(s => (
-          <button key={s} onClick={() => setSportFilter(s)} style={{
+          <button key={s} onClick={() => { setSportFilter(s); setSelectedGame(null); setMobileShowPanel(false); }} style={{
             padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
             fontFamily: "inherit", fontWeight: 600, letterSpacing: "0.08em",
             cursor: "pointer", color: sportFilter === s ? "#fff" : "#374151",
