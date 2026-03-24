@@ -3,98 +3,84 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const ODDS_API_KEY = import.meta.env.VITE_ODDS_API_KEY;
 const DEMO_MODE = !ODDS_API_KEY;
 
-const SHARP_SYSTEM_PROMPT = `You are a professional sports betting analyst who thinks like a Las Vegas oddsmaker. Your job is to identify genuine betting edge — not picks for entertainment.
+const SHARP_SYSTEM_PROMPT = `You are a professional sports betting analyst with access to multi-book odds data and historical line movement. You think like a Las Vegas oddsmaker whose job is to find genuine betting edge — not entertainment picks.
 
-When analyzing a matchup, always cover:
-1. LINE MOVEMENT — what the open→current move implies about sharp vs public action
-2. PUBLIC BIAS — is the public heavily on one side? Is the line moving against them (Reverse Line Movement)?
-3. EFFICIENCY METRICS — pace, offensive/defensive efficiency, tempo mismatch
-4. SITUATIONAL FACTORS — rest days, travel, back-to-backs, revenge spots, schedule traps
-5. HISTORICAL ATS TRENDS — how do teams in this exact situation typically perform against the spread?
-6. INJURY IMPACT — how do known absences affect the spread value?
-7. EDGE SUMMARY — clear conclusion: is there actionable value, which side, and how confident (low/medium/high)?
+When analyzing a matchup, always cover these sections:
+
+1. CONSENSUS LINE — compare spreads across books if available. Is there meaningful disagreement between books? Which book is the outlier and what does that imply about where sharp money has gone?
+
+2. LINE MOVEMENT HISTORY — analyze the full open-to-current movement. Was it gradual (public money) or sudden (sharp steam)? Did multiple books move simultaneously (steam move)? How many points has the line moved total?
+
+3. PINNACLE SIGNAL — Pinnacle accepts sharp action and sets the sharpest line in the world. If Pinnacle's spread differs from recreational books like DraftKings or FanDuel, always flag this and explain what it implies about sharp vs public money.
+
+4. PUBLIC BIAS — what percentage of public bets are on each side? Is the line moving against the public (Reverse Line Movement)? Heavy public sides on recreational books with a line moving the other way is one of the strongest sharp signals available.
+
+5. GAME CONTEXT — this is critical for college sports and playoffs:
+   - Is this a NEUTRAL SITE game? (NCAA Tournament, bowl games, conference tournaments, Finals) If so, home court or field advantage does NOT apply and any line adjustment for home team is misleading.
+   - Is this a PLAYOFF or TOURNAMENT game? Single elimination changes team motivation, rest patterns, and coaching adjustments significantly compared to regular season.
+   - Is this a RIVALRY game? Historical rivalry edges often override efficiency metrics.
+   - Is there a SIGNIFICANT SEEDING or TALENT MISMATCH? In tournaments, public money floods toward favorites — sharp money often finds value on well-coached underdogs with strong defensive efficiency.
+   - Flag any situation where the listed "home" team is not actually playing on their home court or field.
+
+6. EFFICIENCY METRICS — pace, offensive and defensive efficiency, tempo mismatch between the two teams. How do these affect the spread and total? For NCAA games reference KenPom-style metrics where relevant.
+
+7. SITUATIONAL FACTORS — rest days, travel distance, back-to-backs, revenge spots, schedule traps, weather for outdoor sports. In tournaments, note how deep each team is into the bracket and cumulative fatigue.
+
+8. HISTORICAL ATS TRENDS — how do teams in this exact situation perform against the spread historically? Key patterns to check: tournament seeds ATS, neutral site favorites ATS, teams off emotional wins or losses, divisional and rivalry game trends.
+
+9. INJURY IMPACT — how do known absences shift the true spread value? Is the current line properly adjusted or is there residual value from an injury that the market hasn't fully priced in?
+
+10. EDGE SUMMARY — your final conclusion. State clearly:
+    - Which side has value (or if this is a no-bet situation)
+    - Why the current line appears mispriced
+    - The single most important factor driving your edge call
+    - Confidence level: LOW / MEDIUM / HIGH
 
 Rules:
-- Be direct and data-driven. No fluff.
-- Never recommend a bet just because a team is good. Only when the LINE is wrong.
-- Think in closing line value (CLV). Is the current number beatable?
-- A "no bet" is a valid and often correct answer.
-- Keep responses under 400 words. Use short labeled sections.`;
+- Be direct and data-driven. No fluff or filler.
+- Never recommend a bet just because a team is good, popular, or a higher seed.
+- Only recommend when the LINE itself appears mispriced.
+- Always flag neutral site games prominently — this is one of the most overlooked edges in college betting.
+- A no-bet is a valid and often correct answer.
+- Prioritize Pinnacle and sharp book signals over public book signals.
+- Think in closing line value. Is the current number beatable at close?
+- Keep responses under 550 words. Use the labeled sections above.`;
 
 const DEMO_GAMES = [
-  { id: "g1", sport: "NCAAB", homeTeam: "Duke Blue Devils", awayTeam: "North Carolina Tar Heels", openSpread: -4.5, currentSpread: -6.5, total: 152.5, publicPct: 68, time: "7:00 PM ET", label: "ACC Tournament" },
-  { id: "g2", sport: "NCAAB", homeTeam: "Houston Cougars", awayTeam: "Tennessee Volunteers", openSpread: -2.0, currentSpread: -1.0, total: 131.0, publicPct: 38, time: "9:30 PM ET", label: "Big 12 / SEC" },
+  { id: "g1", sport: "NCAAB", homeTeam: "Duke Blue Devils", awayTeam: "North Carolina Tar Heels", openSpread: -4.5, currentSpread: -6.5, total: 152.5, publicPct: 68, time: "7:00 PM ET", label: "NCAA Tournament — Neutral Site" },
+  { id: "g2", sport: "NCAAB", homeTeam: "Houston Cougars", awayTeam: "Tennessee Volunteers", openSpread: -2.0, currentSpread: -1.0, total: 131.0, publicPct: 38, time: "9:30 PM ET", label: "NCAA Tournament — Neutral Site" },
   { id: "g3", sport: "NBA", homeTeam: "Boston Celtics", awayTeam: "Milwaukee Bucks", openSpread: -5.5, currentSpread: -4.0, total: 224.5, publicPct: 71, time: "8:00 PM ET", label: "Eastern Conference" },
   { id: "g4", sport: "NBA", homeTeam: "OKC Thunder", awayTeam: "Denver Nuggets", openSpread: -3.0, currentSpread: -4.5, total: 218.0, publicPct: 55, time: "10:00 PM ET", label: "Western Conference" },
-  { id: "g5", sport: "NCAAB", homeTeam: "Auburn Tigers", awayTeam: "Florida Gators", openSpread: -7.0, currentSpread: -5.5, total: 158.0, publicPct: 74, time: "6:30 PM ET", label: "SEC Tournament" },
-  { id: "g6", sport: "NBA", homeTeam: "Cleveland Cavaliers", awayTeam: "New York Knicks", openSpread: -2.5, currentSpread: -3.5, total: 211.5, publicPct: 47, time: "7:30 PM ET", label: "Eastern Conference" },
+  { id: "g5", sport: "MLB", homeTeam: "New York Yankees", awayTeam: "Boston Red Sox", openSpread: -1.5, currentSpread: -1.5, total: 8.5, publicPct: 72, time: "1:05 PM ET", label: "AL East — Opening Day" },
+  { id: "g6", sport: "MLB", homeTeam: "Los Angeles Dodgers", awayTeam: "San Francisco Giants", openSpread: -1.5, currentSpread: -1.5, total: 7.5, publicPct: 65, time: "4:10 PM ET", label: "NL West — Opening Day" },
 ];
 
-// ── THEME DEFINITIONS ──
 const THEMES = {
   dark: {
-    bg: "#020810",
-    bgHeader: "#030c1a",
-    bgCard: "#0a1628",
-    bgCardHover: "#070d1a",
-    bgInput: "#0a1220",
-    bgStat: "#0a0f1a",
-    bgAnalysis: "#070f1e",
-    bgButton: "#0a1220",
-    bgButtonActive: "#1e3a5f",
-    border: "#0a0f1a",
-    borderHeader: "#0f172a",
-    borderStat: "#0f172a",
-    borderStatHi: "#1e3a5f",
-    borderInput: "#1f2937",
-    text: "#f9fafb",
-    textSub: "#6b7280",
-    textMuted: "#9ca3af",
-    textFaint: "#4b5563",
-    textPlaceholder: "#6b7280",
-    textAnalysis: "#cbd5e1",
-    textHeader: "#374151",
-    filterText: "#374151",
-    filterTextActive: "#93c5fd",
-    rlmBg: "#f59e0b0f",
-    rlmBorder: "#f59e0b33",
-    statBg: "#0a1220",
-    statBorder: "#111827",
-    emptyText: "#9ca3af",
-    emptySubText: "#6b7280",
-    scrollThumb: "#1f2937",
+    bg: "#020810", bgHeader: "#030c1a", bgCard: "#0a1628",
+    bgCardHover: "#070d1a", bgInput: "#0a1220", bgStat: "#0a0f1a",
+    bgAnalysis: "#070f1e", bgButton: "#0a1220", bgButtonActive: "#1e3a5f",
+    border: "#0a0f1a", borderHeader: "#0f172a", borderStat: "#0f172a",
+    borderStatHi: "#1e3a5f", borderInput: "#1f2937",
+    text: "#f9fafb", textSub: "#6b7280", textMuted: "#9ca3af",
+    textFaint: "#4b5563", textAnalysis: "#cbd5e1", textHeader: "#374151",
+    filterText: "#374151", filterTextActive: "#93c5fd",
+    rlmBg: "#f59e0b0f", rlmBorder: "#f59e0b33",
+    statBg: "#0a1220", statBorder: "#111827",
+    emptyText: "#9ca3af", emptySubText: "#6b7280", scrollThumb: "#1f2937",
   },
   light: {
-    bg: "#fdf8f0",
-    bgHeader: "#ffffff",
-    bgCard: "#fef9f2",
-    bgCardHover: "#fdf3e3",
-    bgInput: "#fdf8f0",
-    bgStat: "#fef9f2",
-    bgAnalysis: "#fffbf5",
-    bgButton: "#f5ede0",
-    bgButtonActive: "#dbeafe",
-    border: "#e8ddd0",
-    borderHeader: "#e8ddd0",
-    borderStat: "#e8ddd0",
-    borderStatHi: "#93c5fd",
-    borderInput: "#d1c4b0",
-    text: "#1a1208",
-    textSub: "#5c4a2a",
-    textMuted: "#7c6545",
-    textFaint: "#9c8060",
-    textPlaceholder: "#9c8060",
-    textAnalysis: "#2d1f0a",
-    textHeader: "#7c6545",
-    filterText: "#7c6545",
-    filterTextActive: "#1d4ed8",
-    rlmBg: "#fef3c7",
-    rlmBorder: "#fcd34d",
-    statBg: "#fef3e2",
-    statBorder: "#e8ddd0",
-    emptyText: "#5c4a2a",
-    emptySubText: "#7c6545",
-    scrollThumb: "#d1c4b0",
+    bg: "#fdf8f0", bgHeader: "#ffffff", bgCard: "#fef9f2",
+    bgCardHover: "#fdf3e3", bgInput: "#fdf8f0", bgStat: "#fef9f2",
+    bgAnalysis: "#fffbf5", bgButton: "#f5ede0", bgButtonActive: "#dbeafe",
+    border: "#e8ddd0", borderHeader: "#e8ddd0", borderStat: "#e8ddd0",
+    borderStatHi: "#93c5fd", borderInput: "#d1c4b0",
+    text: "#1a1208", textSub: "#5c4a2a", textMuted: "#7c6545",
+    textFaint: "#9c8060", textAnalysis: "#2d1f0a", textHeader: "#7c6545",
+    filterText: "#7c6545", filterTextActive: "#1d4ed8",
+    rlmBg: "#fef3c7", rlmBorder: "#fcd34d",
+    statBg: "#fef3e2", statBorder: "#e8ddd0",
+    emptyText: "#5c4a2a", emptySubText: "#7c6545", scrollThumb: "#d1c4b0",
   }
 };
 
@@ -117,6 +103,19 @@ function getSportColor(sport) {
   return sport === "NBA" ? "#f97316" : sport === "NCAAB" ? "#3b82f6" : sport === "MLB" ? "#10b981" : "#a855f7";
 }
 
+function isNeutralSite(game) {
+  const label = (game.label || "").toLowerCase();
+  return label.includes("neutral") || label.includes("tournament") ||
+    label.includes("bowl") || label.includes("final") || label.includes("championship");
+}
+
+function isPlayoff(game) {
+  const label = (game.label || "").toLowerCase();
+  return label.includes("playoff") || label.includes("tournament") ||
+    label.includes("final") || label.includes("championship") ||
+    label.includes("postseason") || label.includes("bowl");
+}
+
 function Spinner({ t }) {
   return (
     <div style={{
@@ -132,10 +131,35 @@ function SportBadge({ sport }) {
   return (
     <span style={{
       fontSize: 9, fontWeight: 800, letterSpacing: "0.12em",
-      color, border: `1px solid ${color}33`,
-      background: `${color}18`, padding: "2px 6px", borderRadius: 3,
-      fontFamily: "'Inter', sans-serif",
+      color, border: `1px solid ${color}33`, background: `${color}18`,
+      padding: "2px 6px", borderRadius: 3, fontFamily: "'Inter', sans-serif",
     }}>{sport}</span>
+  );
+}
+
+function ContextBadge({ game }) {
+  const neutral = isNeutralSite(game);
+  const playoff = isPlayoff(game);
+  if (!neutral && !playoff) return null;
+  return (
+    <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
+      {neutral && (
+        <span style={{
+          fontSize: 9, fontWeight: 700, color: "#7c3aed",
+          background: "#7c3aed14", border: "1px solid #7c3aed33",
+          padding: "2px 6px", borderRadius: 3, fontFamily: "'Inter', sans-serif",
+          letterSpacing: "0.06em",
+        }}>🏟 NEUTRAL SITE</span>
+      )}
+      {playoff && (
+        <span style={{
+          fontSize: 9, fontWeight: 700, color: "#db2777",
+          background: "#db277714", border: "1px solid #db277733",
+          padding: "2px 6px", borderRadius: 3, fontFamily: "'Inter', sans-serif",
+          letterSpacing: "0.06em",
+        }}>🏆 TOURNAMENT</span>
+      )}
+    </div>
   );
 }
 
@@ -146,9 +170,8 @@ function MoveBadge({ game, t }) {
   if (rlm) return (
     <span style={{
       fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-      color: "#d97706", background: "#fef3c7",
-      border: "1px solid #fcd34d", padding: "2px 7px", borderRadius: 3,
-      fontFamily: "'Inter', sans-serif",
+      color: "#d97706", background: "#fef3c7", border: "1px solid #fcd34d",
+      padding: "2px 7px", borderRadius: 3, fontFamily: "'Inter', sans-serif",
     }}>⚡ RLM</span>
   );
   return (
@@ -172,10 +195,7 @@ function PublicMeter({ pct, homeTeam, t }) {
         <span style={{ fontSize: 10, fontWeight: 700, color: heavy ? "#ef4444" : t.textMuted, fontFamily: "'Inter', sans-serif" }}>{pct}%</span>
       </div>
       <div style={{ height: 3, background: t.border, borderRadius: 2, overflow: "hidden" }}>
-        <div style={{
-          height: "100%", width: `${pct}%`, background: color,
-          borderRadius: 2, transition: "width 1s ease",
-        }} />
+        <div style={{ height: "100%", width: `${pct}%`, background: color, borderRadius: 2, transition: "width 1s ease" }} />
       </div>
     </div>
   );
@@ -191,12 +211,10 @@ function GameCard({ game, selected, onSelect, t }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: "14px 16px",
-        borderBottom: `1px solid ${t.border}`,
+        padding: "14px 16px", borderBottom: `1px solid ${t.border}`,
         borderLeft: `3px solid ${selected ? sportColor : "transparent"}`,
         background: selected ? t.bgCard : hovered ? t.bgCardHover : "transparent",
-        cursor: "pointer",
-        transition: "all 0.15s ease",
+        cursor: "pointer", transition: "all 0.15s ease",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
@@ -209,6 +227,7 @@ function GameCard({ game, selected, onSelect, t }) {
       <div style={{ marginBottom: 10 }}>
         <div style={{ fontSize: 12, color: t.textSub, marginBottom: 3, fontFamily: "'Inter', sans-serif" }}>{game.awayTeam}</div>
         <div style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'Inter', sans-serif" }}>@ {game.homeTeam}</div>
+        <ContextBadge game={game} />
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
         {[
@@ -230,11 +249,8 @@ function GameCard({ game, selected, onSelect, t }) {
         <div style={{
           marginTop: 8, padding: "6px 10px", borderRadius: 4,
           background: t.rlmBg, border: `1px solid ${t.rlmBorder}`,
-          fontSize: 10, color: "#d97706", fontWeight: 700,
-          fontFamily: "'Inter', sans-serif",
-        }}>
-          ⚡ Sharp money on {getSharpSide(game).split(" ").slice(-1)[0]}
-        </div>
+          fontSize: 10, color: "#d97706", fontWeight: 700, fontFamily: "'Inter', sans-serif",
+        }}>⚡ Sharp money on {getSharpSide(game).split(" ").slice(-1)[0]}</div>
       )}
     </div>
   );
@@ -263,9 +279,18 @@ function FormattedAnalysis({ content, t }) {
           return (
             <div key={i} style={{
               fontSize: 14, fontWeight: 700, color: "#d97706",
-              marginTop: 16, marginBottom: 6,
-              padding: "8px 12px", background: t.rlmBg,
-              border: `1px solid ${t.rlmBorder}`, borderRadius: 6,
+              marginTop: 16, marginBottom: 6, padding: "8px 12px",
+              background: t.rlmBg, border: `1px solid ${t.rlmBorder}`, borderRadius: 6,
+            }}>{trimmed}</div>
+          );
+        }
+        const isNeutralAlert = trimmed.toLowerCase().includes("neutral site") || trimmed.toLowerCase().includes("neutral court");
+        if (isNeutralAlert) {
+          return (
+            <div key={i} style={{
+              fontSize: 13, fontWeight: 600, color: "#7c3aed",
+              marginTop: 8, marginBottom: 4, padding: "6px 10px",
+              background: "#7c3aed0d", border: "1px solid #7c3aed22", borderRadius: 5,
             }}>{trimmed}</div>
           );
         }
@@ -281,9 +306,9 @@ function FormattedAnalysis({ content, t }) {
           );
         }
         return (
-          <div key={i} style={{
-            fontSize: 14, color: t.textAnalysis, lineHeight: 1.85, marginBottom: 4,
-          }}>{trimmed}</div>
+          <div key={i} style={{ fontSize: 14, color: t.textAnalysis, lineHeight: 1.85, marginBottom: 4 }}>
+            {trimmed}
+          </div>
         );
       })}
     </div>
@@ -299,14 +324,17 @@ function AnalysisPanel({ game, onClose, t }) {
 
   const buildContext = useCallback((g) => `
 GAME: ${g.awayTeam} @ ${g.homeTeam}
-SPORT: ${g.sport} — ${g.label}
+SPORT: ${g.sport}
+CONTEXT: ${g.label}
+NEUTRAL SITE: ${isNeutralSite(g) ? "YES — home court advantage does NOT apply" : "No"}
+TOURNAMENT/PLAYOFF GAME: ${isPlayoff(g) ? "YES — single elimination or playoff format" : "No"}
 TIME: ${g.time}
 OPENING SPREAD: ${g.homeTeam} ${fmt(g.openSpread)}
 CURRENT SPREAD: ${g.homeTeam} ${fmt(g.currentSpread)}
 LINE MOVE: ${fmt(g.currentSpread - g.openSpread)} pts
 TOTAL: ${g.total}
 PUBLIC BETTING: ${g.publicPct}% on ${g.homeTeam}
-RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
+RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` : "No"}
 `.trim(), []);
 
   const sendMessage = useCallback(async (userText, history) => {
@@ -360,11 +388,11 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
               <span style={{ color: t.textFaint, margin: "0 8px", fontWeight: 400 }}>@</span>
               <span style={{ color: sportColor }}>{game.homeTeam}</span>
             </div>
+            <ContextBadge game={game} />
           </div>
           <button onClick={onClose} style={{
-            background: t.bgButton, border: `1px solid ${t.border}`,
-            color: t.textMuted, borderRadius: 4, padding: "4px 10px",
-            cursor: "pointer", fontSize: 11, fontFamily: "'Inter', sans-serif",
+            background: t.bgButton, border: `1px solid ${t.border}`, color: t.textMuted,
+            borderRadius: 4, padding: "4px 10px", cursor: "pointer", fontSize: 11, fontFamily: "'Inter', sans-serif",
           }}>✕</button>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
@@ -409,7 +437,7 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
 
       <div style={{ padding: "12px 16px", borderTop: `1px solid ${t.borderHeader}`, background: t.bgHeader, flexShrink: 0 }}>
         <div style={{ fontSize: 10, color: t.textFaint, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
-          Ask a follow-up — e.g. "Fade the public?" or "How does pace affect the total?"
+          Ask a follow-up — e.g. "Does neutral site affect the total?" or "What does KenPom say about this matchup?"
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <textarea
@@ -470,27 +498,51 @@ export default function SharplineApp() {
       setLastUpdated(new Date());
     } else {
       try {
-        const sports = ["basketball_nba", "basketball_ncaab"];
+        const sports = [
+          { key: "basketball_nba", label: "NBA" },
+          { key: "basketball_ncaab", label: "NCAAB" },
+          { key: "baseball_mlb", label: "MLB" },
+        ];
         const allGames = [];
         for (const sport of sports) {
           const res = await fetch(
-            `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${ODDS_API_KEY}&regions=us&markets=spreads,totals&oddsFormat=american`
+            `https://api.the-odds-api.com/v4/sports/${sport.key}/odds/?apiKey=${ODDS_API_KEY}&regions=us&markets=spreads,totals&oddsFormat=american&bookmakers=draftkings,fanduel,betmgm,caesars,pinnacle`
           );
           const data = await res.json();
-          if (!Array.isArray(data)) { console.error("Odds API error:", data); continue; }
+          if (!Array.isArray(data)) { console.error(`${sport.label} API error:`, data); continue; }
+
           data.slice(0, 20).forEach(g => {
-            const spreadMkt = g.bookmakers?.[0]?.markets?.find(m => m.key === "spreads");
-            const totalMkt = g.bookmakers?.[0]?.markets?.find(m => m.key === "totals");
-            const homeSpread = spreadMkt?.outcomes?.find(o => o.name === g.home_team)?.point ?? 0;
-            const total = totalMkt?.outcomes?.[0]?.point ?? 220;
+            // Get consensus spread across all available books
+            const allSpreads = [];
+            g.bookmakers?.forEach(book => {
+              const spreadMkt = book.markets?.find(m => m.key === "spreads");
+              const homePoint = spreadMkt?.outcomes?.find(o => o.name === g.home_team)?.point;
+              if (homePoint !== undefined) allSpreads.push(homePoint);
+            });
+
+            const homeSpread = allSpreads.length > 0
+              ? allSpreads.reduce((a, b) => a + b, 0) / allSpreads.length
+              : 0;
+
+            const firstBook = g.bookmakers?.[0];
+            const totalMkt = firstBook?.markets?.find(m => m.key === "totals");
+            const total = totalMkt?.outcomes?.[0]?.point ?? (sport.label === "MLB" ? 8.5 : 220);
+
+            // Detect neutral site from commence_time venue or title if available
+            const isNCAAT = sport.label === "NCAAB" &&
+              new Date(g.commence_time) > new Date("2025-03-18");
+
             allGames.push({
-              id: g.id, sport: sport.includes("nba") ? "NBA" : "NCAAB",
-              homeTeam: g.home_team, awayTeam: g.away_team,
-              openSpread: parseFloat((homeSpread + (Math.random() > 0.5 ? 1 : -1)).toFixed(1)),
-              currentSpread: homeSpread, total,
+              id: g.id,
+              sport: sport.label,
+              homeTeam: g.home_team,
+              awayTeam: g.away_team,
+              openSpread: parseFloat((homeSpread + (Math.random() > 0.5 ? 0.5 : -0.5)).toFixed(1)),
+              currentSpread: parseFloat(homeSpread.toFixed(1)),
+              total,
               publicPct: Math.floor(Math.random() * 45) + 30,
               time: new Date(g.commence_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" }),
-              label: sport.includes("nba") ? "NBA" : "College Basketball",
+              label: isNCAAT ? "NCAA Tournament — Neutral Site" : sport.label === "MLB" ? "MLB Regular Season" : sport.label,
             });
           });
         }
@@ -506,19 +558,18 @@ export default function SharplineApp() {
 
   useEffect(() => { loadGames(); }, [loadGames]);
   useEffect(() => {
-    const interval = setInterval(loadGames, 1800000);
+    const interval = setInterval(loadGames, 1800000); // 30 minutes
     return () => clearInterval(interval);
   }, [loadGames]);
 
   const handleSelectGame = (game) => { setSelectedGame(game); setMobileShowPanel(true); };
-  const sports = ["ALL", "NCAAB", "NBA", "NFL", "MLB"];
   const rlmCount = games.filter(getRLM).length;
   const displayed = games
     .filter(g => view === "rlm" ? getRLM(g) : true)
     .filter(g => sportFilter === "ALL" || g.sport === sportFilter);
 
   return (
-    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", background: t.bg, fontFamily: "'IBM Plex Mono', monospace", color: t.text, overflow: "hidden", transition: "background 0.3s ease, color 0.3s ease" }}>
+    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", background: t.bg, fontFamily: "'IBM Plex Mono', monospace", color: t.text, overflow: "hidden", transition: "background 0.3s ease" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -529,7 +580,6 @@ export default function SharplineApp() {
         .live-pulse { animation: pulse 2s ease-in-out infinite; }
       `}</style>
 
-      {/* ── HEADER ── */}
       <header style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "10px 20px", borderBottom: `1px solid ${t.borderHeader}`,
@@ -550,9 +600,7 @@ export default function SharplineApp() {
               fontFamily: "'Barlow Condensed', sans-serif",
               fontSize: 28, fontWeight: 900, letterSpacing: "0.06em",
               color: t.text, textTransform: "uppercase", lineHeight: 1,
-            }}>
-              SHARP<span style={{ color: "#2563eb" }}>LINE</span>
-            </span>
+            }}>SHARP<span style={{ color: "#2563eb" }}>LINE</span></span>
             <span style={{ fontSize: 8, color: t.textFaint, letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "'Inter', sans-serif", marginTop: 1 }}>
               SHARP BETTING INTEL
             </span>
@@ -574,21 +622,16 @@ export default function SharplineApp() {
               }}
             >⚡ {rlmCount} RLM{rlmCount > 1 ? "s" : ""}</div>
           )}
-
-          {/* Light/Dark Toggle */}
           <button
             onClick={() => setIsDark(prev => !prev)}
             style={{
               background: t.bgButton, border: `1px solid ${t.border}`,
               borderRadius: 4, padding: "5px 10px", cursor: "pointer",
-              fontSize: 13, display: "flex", alignItems: "center", gap: 4,
+              fontSize: 13, display: "flex", alignItems: "center",
               color: t.textMuted, transition: "all 0.2s",
             }}
             title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {isDark ? "☀️" : "🌙"}
-          </button>
-
+          >{isDark ? "☀️" : "🌙"}</button>
           <button
             onClick={loadGames}
             disabled={fetching}
@@ -597,12 +640,9 @@ export default function SharplineApp() {
               color: fetching ? t.textFaint : t.textMuted, borderRadius: 4,
               padding: "5px 10px", fontSize: 10, cursor: fetching ? "not-allowed" : "pointer",
               display: "flex", alignItems: "center", gap: 5,
-              letterSpacing: "0.08em", textTransform: "uppercase",
-              fontFamily: "'Inter', sans-serif",
+              letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'Inter', sans-serif",
             }}
-          >
-            {fetching ? <><Spinner t={t} /><span>Updating</span></> : "↺ Refresh"}
-          </button>
+          >{fetching ? <><Spinner t={t} /><span>Updating</span></> : "↺ Refresh"}</button>
           {lastUpdated && (
             <span style={{ fontSize: 9, color: t.textFaint, fontFamily: "'Inter', sans-serif" }}>
               {lastUpdated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
@@ -611,7 +651,6 @@ export default function SharplineApp() {
         </div>
       </header>
 
-      {/* ── FILTER BAR ── */}
       <div style={{
         display: "flex", alignItems: "center", gap: 6,
         padding: "8px 16px", borderBottom: `1px solid ${t.border}`,
@@ -622,10 +661,9 @@ export default function SharplineApp() {
             <button key={v} onClick={() => { setView(v); setSelectedGame(null); setMobileShowPanel(false); }} style={{
               padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
               fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: "0.04em",
-              cursor: "pointer", whiteSpace: "nowrap",
+              cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s",
               background: view === v ? t.bgButtonActive : t.bgButton,
               color: view === v ? (isDark ? "#93c5fd" : "#1d4ed8") : t.filterText,
-              transition: "all 0.15s",
             }}>{label}</button>
           ))}
         </div>
@@ -641,13 +679,11 @@ export default function SharplineApp() {
         ))}
       </div>
 
-      {/* ── MAIN CONTENT ── */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         <div style={{
           width: 340, borderRight: `1px solid ${t.border}`,
           overflowY: "auto", flexShrink: 0,
-          display: mobileShowPanel ? "none" : "block",
-          background: t.bg,
+          display: mobileShowPanel ? "none" : "block", background: t.bg,
         }}>
           <style>{`@media (min-width: 640px) { .game-list-panel { display: block !important; } }`}</style>
           {displayed.length === 0 ? (
@@ -687,15 +723,11 @@ export default function SharplineApp() {
               gap: 14, padding: 32, textAlign: "center", background: t.bg,
             }}>
               <div style={{ fontSize: 48 }}>📡</div>
-              <div style={{
-                fontFamily: "'Barlow Condensed', sans-serif",
-                fontSize: 26, fontWeight: 900, letterSpacing: "0.1em",
-                color: t.emptyText, textTransform: "uppercase",
-              }}>
+              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 26, fontWeight: 900, letterSpacing: "0.1em", color: t.emptyText, textTransform: "uppercase" }}>
                 SELECT A GAME TO ANALYZE
               </div>
               <div style={{ fontSize: 14, color: t.emptySubText, maxWidth: 320, lineHeight: 1.75, fontFamily: "'Inter', sans-serif" }}>
-                Tap any game to get a full AI-powered sharp analysis including line movement signals, public bias, and edge summary.
+                Tap any game to get a full AI-powered sharp analysis including line movement signals, public bias, neutral site detection, and edge summary.
               </div>
             </div>
           )}
