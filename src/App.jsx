@@ -564,6 +564,7 @@ export default function SharplineApp() {
 
   const handleSelectGame = (game) => { setSelectedGame(game); setMobileShowPanel(true); };
   const rlmCount = games.filter(getRLM).length;
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const displayed = games
     .filter(g => view === "rlm" ? getRLM(g) : true)
     .filter(g => sportFilter === "ALL" || g.sport === sportFilter);
@@ -685,13 +686,14 @@ export default function SharplineApp() {
       </div>
 
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        {/* Game list — full width on mobile when no game selected, 340px on desktop */}
         <div style={{
-          width: 340, borderRight: `1px solid ${t.border}`,
+          width: isMobile ? "100%" : 340,
+          borderRight: isMobile ? "none" : `1px solid ${t.border}`,
           overflowY: "auto", flexShrink: 0,
-          display: mobileShowPanel ? "none" : "block", background: t.bg,
-        }}
-          className="game-list-panel"
-        >
+          display: (isMobile && mobileShowPanel) ? "none" : "block",
+          background: t.bg,
+        }}>
           {displayed.length === 0 ? (
             <div style={{ padding: 40, textAlign: "center", lineHeight: 1.8 }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>📡</div>
@@ -707,37 +709,40 @@ export default function SharplineApp() {
           ))}
         </div>
 
-        <div className="analysis-panel" style={{ flex: 1, overflow: "hidden", display: mobileShowPanel || !selectedGame ? "flex" : "flex", flexDirection: "column", background: t.bg, width: mobileShowPanel ? "100%" : "auto" }}>
-          {mobileShowPanel && (
-            <button
-              onClick={() => { setMobileShowPanel(false); setSelectedGame(null); }}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 14px", background: t.bgHeader,
-                border: "none", borderBottom: `1px solid ${t.borderHeader}`,
-                color: t.textMuted, fontSize: 12, cursor: "pointer",
-                fontFamily: "'Inter', sans-serif", letterSpacing: "0.04em",
-              }}
-            >← Back to Games</button>
-          )}
-          {selectedGame ? (
-            <AnalysisPanel key={selectedGame.id} game={selectedGame} onClose={() => { setSelectedGame(null); setMobileShowPanel(false); }} t={t} />
-          ) : !mobileShowPanel && (
-            <div style={{
-              flex: 1, display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center",
-              gap: 14, padding: 32, textAlign: "center", background: t.bg,
-            }}>
-              <div style={{ fontSize: 48 }}>📡</div>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 26, fontWeight: 900, letterSpacing: "0.1em", color: t.emptyText, textTransform: "uppercase" }}>
-                SELECT A GAME TO ANALYZE
+        {/* Analysis panel — hidden on mobile until game selected, flex on desktop */}
+        {(!isMobile || mobileShowPanel) && (
+          <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", background: t.bg }}>
+            {mobileShowPanel && (
+              <button
+                onClick={() => { setMobileShowPanel(false); setSelectedGame(null); }}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "8px 14px", background: t.bgHeader,
+                  border: "none", borderBottom: `1px solid ${t.borderHeader}`,
+                  color: t.textMuted, fontSize: 12, cursor: "pointer",
+                  fontFamily: "'Inter', sans-serif", letterSpacing: "0.04em",
+                }}
+              >← Back to Games</button>
+            )}
+            {selectedGame ? (
+              <AnalysisPanel key={selectedGame.id} game={selectedGame} onClose={() => { setSelectedGame(null); setMobileShowPanel(false); }} t={t} />
+            ) : (
+              <div style={{
+                flex: 1, display: "flex", flexDirection: "column",
+                alignItems: "center", justifyContent: "center",
+                gap: 14, padding: 32, textAlign: "center", background: t.bg,
+              }}>
+                <div style={{ fontSize: 48 }}>📡</div>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 26, fontWeight: 900, letterSpacing: "0.1em", color: t.emptyText, textTransform: "uppercase" }}>
+                  SELECT A GAME TO ANALYZE
+                </div>
+                <div style={{ fontSize: 14, color: t.emptySubText, maxWidth: 320, lineHeight: 1.75, fontFamily: "'Inter', sans-serif" }}>
+                  Tap any game to get a full AI-powered sharp analysis including line movement signals, public bias, neutral site detection, and edge summary.
+                </div>
               </div>
-              <div style={{ fontSize: 14, color: t.emptySubText, maxWidth: 320, lineHeight: 1.75, fontFamily: "'Inter', sans-serif" }}>
-                Tap any game to get a full AI-powered sharp analysis including line movement signals, public bias, neutral site detection, and edge summary.
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
