@@ -431,8 +431,8 @@ export default function SharplineApp() {
 
   const sports = ["ALL", "NCAAB", "NBA", "NFL"];
   const displayed = games
-    .filter(g => view === "watchlist" ? watchlist.has(g.id) : true)
-    .filter(g => sportFilter === "ALL" || g.sport === sportFilter);
+  .filter(g => view === "watchlist" ? watchlist.has(g.id) : view === "rlm" ? getRLM(g) : true)
+  .filter(g => sportFilter === "ALL" || g.sport === sportFilter);
 
   const rlmCount = games.filter(getRLM).length;
 
@@ -515,7 +515,7 @@ export default function SharplineApp() {
         background: "#020810", flexShrink: 0, overflowX: "auto",
       }}>
         <div style={{ display: "flex", gap: 4, marginRight: 8 }}>
-          {[["all", "All Games"], ["watchlist", `★ Watchlist (${watchlist.size})`]].map(([v, label]) => (
+          {[["all", "All Games"], ["watchlist", `★ Watchlist (${watchlist.size})`], ["rlm", `⚡ RLM (${rlmCount})`]].map(([v, label]) => (
             <button key={v} onClick={() => { setView(v); setSelectedGame(null); setMobileShowPanel(false); }} style={{
               padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
               fontFamily: "inherit", fontWeight: 600, letterSpacing: "0.06em",
