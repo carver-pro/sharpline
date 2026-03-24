@@ -419,7 +419,7 @@ export default function SharplineApp() {
 
   return (
     <div style={{
-      height: "100vh", display: "flex", flexDirection: "column",
+      height: "100dvh", display: "flex", flexDirection: "column",
       background: "#020810",
       fontFamily: "'IBM Plex Mono', 'Courier New', monospace",
       color: "#e2e8f0", overflow: "hidden",
