@@ -133,10 +133,7 @@ function GameCard({ game, selected, onSelect }) {
           <SportBadge sport={game.sport} />
           <span style={{ fontSize: 9, color: "#374151" }}>{game.time}</span>
         </div>
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <MoveBadge game={game} />
-    
-        </div>
+        <MoveBadge game={game} />
       </div>
       <div style={{ marginBottom: 10 }}>
         <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>{game.awayTeam}</div>
@@ -343,7 +340,6 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
 export default function SharplineApp() {
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
-  const toggleWatchlist = (id) => {   setWatchlist(prev => {     const next = new Set(prev);     next.has(id) ? next.delete(id) : next.add(id);     return next;   }); };
   const [sportFilter, setSportFilter] = useState("ALL");
   const [view, setView] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -409,25 +405,17 @@ export default function SharplineApp() {
     return () => clearInterval(interval);
   }, [loadGames]);
 
-  const toggleWatchlist = (id) => {
-    setWatchlist(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
-
   const handleSelectGame = (game) => {
     setSelectedGame(game);
     setMobileShowPanel(true);
   };
 
   const sports = ["ALL", "NCAAB", "NBA", "NFL"];
-  const displayed = games
-  .filter(g => view === "watchlist" ? watchlist.has(g.id) : view === "rlm" ? getRLM(g) : true)
-  .filter(g => sportFilter === "ALL" || g.sport === sportFilter);
-
   const rlmCount = games.filter(getRLM).length;
+
+  const displayed = games
+    .filter(g => view === "rlm" ? getRLM(g) : true)
+    .filter(g => sportFilter === "ALL" || g.sport === sportFilter);
 
   return (
     <div style={{
@@ -469,17 +457,17 @@ export default function SharplineApp() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {rlmCount > 0 && (
-  <div
-    onClick={() => { setView("rlm"); setSelectedGame(null); setMobileShowPanel(false); }}
-    style={{
-      fontSize: 10, color: "#f59e0b", fontWeight: 600,
-      background: "#f59e0b0f", border: "1px solid #f59e0b22",
-      padding: "3px 8px", borderRadius: 4, cursor: "pointer",
-    }}
-  >
-    ⚡ {rlmCount} RLM signal{rlmCount > 1 ? "s" : ""}
-  </div>
-)}
+            <div
+              onClick={() => { setView("rlm"); setSelectedGame(null); setMobileShowPanel(false); }}
+              style={{
+                fontSize: 10, color: "#f59e0b", fontWeight: 600,
+                background: "#f59e0b0f", border: "1px solid #f59e0b22",
+                padding: "3px 8px", borderRadius: 4, cursor: "pointer",
+              }}
+            >
+              ⚡ {rlmCount} RLM signal{rlmCount > 1 ? "s" : ""}
+            </div>
+          )}
           <button
             onClick={loadGames}
             disabled={fetching}
@@ -505,7 +493,7 @@ export default function SharplineApp() {
       <div style={{
         display: "flex", alignItems: "center", gap: 8,
         padding: "8px 16px", borderBottom: "1px solid #0a0f1a",
-        background: "#020810", flexShrink: 0, overflowX: "auto",
+        background: "#020810", flexShrink: 0, overflowX: "auto", flexWrap: "wrap",
       }}>
         <div style={{ display: "flex", gap: 4, marginRight: 8 }}>
           {[["all", "All Games"], ["rlm", `⚡ RLM (${rlmCount})`]].map(([v, label]) => (
@@ -538,8 +526,8 @@ export default function SharplineApp() {
         }}>
           <style>{`@media (min-width: 640px) { .game-list-panel { display: block !important; } }`}</style>
           {displayed.length === 0 ? (
-            <div style={{ padding: 32, textAlign: "center", color: "#1f2937", fontSize: 12 }}>
-              {view === "watchlist" ? "No games on your watchlist yet.\nClick ★ on any game to add it." : "No games found."}
+            <div style={{ padding: 32, textAlign: "center", color: "#1f2937", fontSize: 12, lineHeight: 1.8 }}>
+              {view === "rlm" ? "No RLM signals detected right now.\nCheck back as lines update." : "No games found."}
             </div>
           ) : displayed.map(game => (
             <GameCard
@@ -547,7 +535,6 @@ export default function SharplineApp() {
               game={game}
               selected={selectedGame?.id === game.id}
               onSelect={handleSelectGame}
-        
             />
           ))}
         </div>
@@ -555,7 +542,7 @@ export default function SharplineApp() {
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {mobileShowPanel && (
             <button
-              onClick={() => setMobileShowPanel(false)}
+              onClick={() => { setMobileShowPanel(false); setSelectedGame(null); }}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "8px 14px", background: "#030c1a",
@@ -575,7 +562,7 @@ export default function SharplineApp() {
             <div style={{
               flex: 1, display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
-              color: "#0f172a", gap: 12, padding: 32, textAlign: "center",
+              gap: 12, padding: 32, textAlign: "center",
             }}>
               <div style={{ fontSize: 40 }}>📡</div>
               <div style={{ fontFamily: "'Teko', sans-serif", fontSize: 20, letterSpacing: "0.1em", color: "#1f2937" }}>
