@@ -111,7 +111,7 @@ function PublicMeter({ pct, homeTeam }) {
   );
 }
 
-function GameCard({ game, selected, onSelect, watchlisted, onWatchlist }) {
+function GameCard({ game, selected, onSelect }) {
   const rlm = getRLM(game);
   const sportColor = getSportColor(game.sport);
   return (
@@ -135,14 +135,7 @@ function GameCard({ game, selected, onSelect, watchlisted, onWatchlist }) {
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <MoveBadge game={game} />
-          <button
-            onClick={e => { e.stopPropagation(); onWatchlist(game.id); }}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              fontSize: 13, opacity: watchlisted ? 1 : 0.25,
-              transition: "opacity 0.15s",
-            }}
-          >★</button>
+    
         </div>
       </div>
       <div style={{ marginBottom: 10 }}>
@@ -350,7 +343,7 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
 export default function SharplineApp() {
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
-  const [watchlist, setWatchlist] = useState(new Set());
+  const toggleWatchlist = (id) => {   setWatchlist(prev => {     const next = new Set(prev);     next.has(id) ? next.delete(id) : next.add(id);     return next;   }); };
   const [sportFilter, setSportFilter] = useState("ALL");
   const [view, setView] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -515,7 +508,7 @@ export default function SharplineApp() {
         background: "#020810", flexShrink: 0, overflowX: "auto",
       }}>
         <div style={{ display: "flex", gap: 4, marginRight: 8 }}>
-          {[["all", "All Games"], ["watchlist", `★ Watchlist (${watchlist.size})`], ["rlm", `⚡ RLM (${rlmCount})`]].map(([v, label]) => (
+          {[["all", "All Games"], ["rlm", `⚡ RLM (${rlmCount})`]].map(([v, label]) => (
             <button key={v} onClick={() => { setView(v); setSelectedGame(null); setMobileShowPanel(false); }} style={{
               padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
               fontFamily: "inherit", fontWeight: 600, letterSpacing: "0.06em",
@@ -554,8 +547,7 @@ export default function SharplineApp() {
               game={game}
               selected={selectedGame?.id === game.id}
               onSelect={handleSelectGame}
-              watchlisted={watchlist.has(game.id)}
-              onWatchlist={toggleWatchlist}
+        
             />
           ))}
         </div>
