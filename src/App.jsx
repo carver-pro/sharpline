@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 //  In the deployed Vercel version this comes from
 //  an environment variable (we walk through that).
 // ─────────────────────────────────────────────
-const ODDS_API_KEY = import.meta.env.VITE_ODDS_API_KEY; // the-odds-api.com
+const ODDS_API_KEY = "PASTE_YOUR_KEY_HERE"; // the-odds-api.com
 const DEMO_MODE = ODDS_API_KEY === "PASTE_YOUR_KEY_HERE";
 
 // ─────────────────────────────────────────────
@@ -239,34 +239,19 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
     setMessages(newHistory);
     try {
       const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system: SHARP_SYSTEM_PROMPT,
-          messages: newHistory,
-        }),
-      });
-
-      const raw = await res.text();
-      console.log("Raw API response:", raw);
-
-      let data;
-      try {
-        data = JSON.parse(raw);
-      } catch(e) {
-        setMessages([...newHistory, { role: "assistant", content: `Parse error: ${raw.slice(0, 300)}` }]);
-        setLoading(false);
-        return;
-      }
-
-      const reply = data?.content?.[0]?.text
-        || data?.error
-        || `Unexpected response: ${JSON.stringify(data).slice(0, 300)}`;
-
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    system: SHARP_SYSTEM_PROMPT,
+    messages: newHistory,
+  }),
+});
+const data = await res.json();
+const reply = data?.content?.[0]?.text || data?.error || "Unable to generate analysis.";
       const updated = [...newHistory, { role: "assistant", content: reply }];
       setMessages(updated);
-    } catch(err) {
-      setMessages([...newHistory, { role: "assistant", content: `Network error: ${err.message}` }]);
+    } catch {
+      setMessages([...newHistory, { role: "assistant", content: "⚠️ API error. Make sure you're running this in Claude.ai." }]);
     }
     setLoading(false);
   }, []);
@@ -476,7 +461,7 @@ export default function SharplineApp() {
 
   useEffect(() => { loadGames(); }, [loadGames]);
   useEffect(() => {
-    const interval = setInterval(loadGames, 300000); // refresh every 5 minutes
+    const interval = setInterval(loadGames, 60000); // refresh every 60s
     return () => clearInterval(interval);
   }, [loadGames]);
 
