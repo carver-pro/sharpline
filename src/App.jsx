@@ -238,16 +238,14 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
     const newHistory = [...history, { role: "user", content: userText }];
     setMessages(newHistory);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: SHARP_SYSTEM_PROMPT,
-          messages: newHistory,
-        }),
-      });
+      const res = await fetch("/api/analyze", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    system: SHARP_SYSTEM_PROMPT,
+    messages: newHistory,
+  }),
+});
       const data = await res.json();
       const reply = data.content?.[0]?.text || "Unable to generate analysis.";
       const updated = [...newHistory, { role: "assistant", content: reply }];
