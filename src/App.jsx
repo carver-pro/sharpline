@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 //  In the deployed Vercel version this comes from
 //  an environment variable (we walk through that).
 // ─────────────────────────────────────────────
-const ODDS_API_KEY = "PASTE_YOUR_KEY_HERE"; // the-odds-api.com
+const ODDS_API_KEY = import.meta.env.VITE_ODDS_API_KEY; // the-odds-api.com
 const DEMO_MODE = ODDS_API_KEY === "PASTE_YOUR_KEY_HERE";
 
 // ─────────────────────────────────────────────
