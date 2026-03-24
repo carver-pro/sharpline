@@ -60,7 +60,7 @@ const THEMES = {
     bg: "#020810", bgHeader: "#030c1a", bgCard: "#0a1628",
     bgCardHover: "#070d1a", bgInput: "#0a1220", bgStat: "#0a0f1a",
     bgAnalysis: "#070f1e", bgButton: "#0a1220", bgButtonActive: "#1e3a5f",
-    border: "#0a0f1a", borderHeader: "#0f172a", borderStat: "#0f172a",
+    border: "#1e2a3a", borderHeader: "#0f172a", borderStat: "#0f172a",
     borderStatHi: "#1e3a5f", borderInput: "#1f2937",
     text: "#f9fafb", textSub: "#6b7280", textMuted: "#9ca3af",
     textFaint: "#4b5563", textAnalysis: "#cbd5e1", textHeader: "#374151",
