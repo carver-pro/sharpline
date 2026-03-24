@@ -544,14 +544,16 @@ export default function SharplineApp() {
   const [view, setView] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [fetching, setFetching] = useState(false);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
 
   const t = isDark ? THEMES.dark : THEMES.light;
 
   useEffect(() => {
     const color = isDark ? "#030c1a" : "#ffffff";
+    const bg = isDark ? "#030c1a" : "#fdf8f0";
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", color);
-    document.body.style.backgroundColor = isDark ? "#030c1a" : "#fdf8f0";
+    document.documentElement.style.backgroundColor = bg;
+    document.body.style.backgroundColor = bg;
   }, [isDark]);
 
   const loadGames = useCallback(async () => {
@@ -644,7 +646,7 @@ export default function SharplineApp() {
         @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
         .live-pulse { animation: pulse 2s ease-in-out infinite; }
-        html, body { background-color: ${t.bg}; margin: 0; padding: 0; }
+        html, body { background-color: #fdf8f0; margin: 0; padding: 0; }
       `}</style>
 
       {/* ── HEADER ── */}
