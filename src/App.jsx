@@ -239,19 +239,34 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
     setMessages(newHistory);
     try {
       const res = await fetch("/api/analyze", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    system: SHARP_SYSTEM_PROMPT,
-    messages: newHistory,
-  }),
-});
-      const data = await res.json();
-      const reply = data.content?.[0]?.text || "Unable to generate analysis.";
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: SHARP_SYSTEM_PROMPT,
+          messages: newHistory,
+        }),
+      });
+
+      const raw = await res.text();
+      console.log("Raw API response:", raw);
+
+      let data;
+      try {
+        data = JSON.parse(raw);
+      } catch(e) {
+        setMessages([...newHistory, { role: "assistant", content: `Parse error: ${raw.slice(0, 300)}` }]);
+        setLoading(false);
+        return;
+      }
+
+      const reply = data?.content?.[0]?.text
+        || data?.error
+        || `Unexpected response: ${JSON.stringify(data).slice(0, 300)}`;
+
       const updated = [...newHistory, { role: "assistant", content: reply }];
       setMessages(updated);
-    } catch {
-      setMessages([...newHistory, { role: "assistant", content: "⚠️ API error. Make sure you're running this in Claude.ai." }]);
+    } catch(err) {
+      setMessages([...newHistory, { role: "assistant", content: `Network error: ${err.message}` }]);
     }
     setLoading(false);
   }, []);
