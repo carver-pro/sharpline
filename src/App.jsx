@@ -1,18 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-// ─────────────────────────────────────────────
-//  CONFIGURATION
-//  When you get your Odds API key, paste it below.
-//  In the deployed Vercel version this comes from
-//  an environment variable (we walk through that).
-// ─────────────────────────────────────────────
-const ODDS_API_KEY = "PASTE_YOUR_KEY_HERE"; // the-odds-api.com
-const DEMO_MODE = ODDS_API_KEY === "PASTE_YOUR_KEY_HERE";
+const ODDS_API_KEY = import.meta.env.VITE_ODDS_API_KEY;
+const DEMO_MODE = !ODDS_API_KEY;
 
-// ─────────────────────────────────────────────
-//  SHARP ANALYST SYSTEM PROMPT
-//  This is the "brain" sent to the AI for every analysis.
-// ─────────────────────────────────────────────
 const SHARP_SYSTEM_PROMPT = `You are a professional sports betting analyst who thinks like a Las Vegas oddsmaker. Your job is to identify genuine betting edge — not picks for entertainment.
 
 When analyzing a matchup, always cover:
@@ -31,21 +21,15 @@ Rules:
 - A "no bet" is a valid and often correct answer.
 - Keep responses under 400 words. Use short labeled sections.`;
 
-// ─────────────────────────────────────────────
-//  DEMO DATA (used when no API key is set)
-// ─────────────────────────────────────────────
 const DEMO_GAMES = [
   { id: "g1", sport: "NCAAB", homeTeam: "Duke Blue Devils", awayTeam: "North Carolina Tar Heels", openSpread: -4.5, currentSpread: -6.5, total: 152.5, publicPct: 68, time: "7:00 PM ET", label: "ACC Tournament" },
   { id: "g2", sport: "NCAAB", homeTeam: "Houston Cougars", awayTeam: "Tennessee Volunteers", openSpread: -2.0, currentSpread: -1.0, total: 131.0, publicPct: 38, time: "9:30 PM ET", label: "Big 12 / SEC" },
-  { id: "g3", sport: "NBA",   homeTeam: "Boston Celtics", awayTeam: "Milwaukee Bucks", openSpread: -5.5, currentSpread: -4.0, total: 224.5, publicPct: 71, time: "8:00 PM ET", label: "Eastern Conference" },
-  { id: "g4", sport: "NBA",   homeTeam: "OKC Thunder", awayTeam: "Denver Nuggets", openSpread: -3.0, currentSpread: -4.5, total: 218.0, publicPct: 55, time: "10:00 PM ET", label: "Western Conference" },
+  { id: "g3", sport: "NBA", homeTeam: "Boston Celtics", awayTeam: "Milwaukee Bucks", openSpread: -5.5, currentSpread: -4.0, total: 224.5, publicPct: 71, time: "8:00 PM ET", label: "Eastern Conference" },
+  { id: "g4", sport: "NBA", homeTeam: "OKC Thunder", awayTeam: "Denver Nuggets", openSpread: -3.0, currentSpread: -4.5, total: 218.0, publicPct: 55, time: "10:00 PM ET", label: "Western Conference" },
   { id: "g5", sport: "NCAAB", homeTeam: "Auburn Tigers", awayTeam: "Florida Gators", openSpread: -7.0, currentSpread: -5.5, total: 158.0, publicPct: 74, time: "6:30 PM ET", label: "SEC Tournament" },
-  { id: "g6", sport: "NBA",   homeTeam: "Cleveland Cavaliers", awayTeam: "New York Knicks", openSpread: -2.5, currentSpread: -3.5, total: 211.5, publicPct: 47, time: "7:30 PM ET", label: "Eastern Conference" },
+  { id: "g6", sport: "NBA", homeTeam: "Cleveland Cavaliers", awayTeam: "New York Knicks", openSpread: -2.5, currentSpread: -3.5, total: 211.5, publicPct: 47, time: "7:30 PM ET", label: "Eastern Conference" },
 ];
 
-// ─────────────────────────────────────────────
-//  UTILITY FUNCTIONS
-// ─────────────────────────────────────────────
 function fmt(n) {
   const v = parseFloat(n);
   return v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1);
@@ -58,21 +42,12 @@ function getRLM(game) {
 }
 
 function getSharpSide(game) {
-  const publicFavorsHome = game.publicPct > 55;
-  return publicFavorsHome ? game.awayTeam : game.homeTeam;
-}
-
-function getMoveSize(game) {
-  return Math.abs(game.currentSpread - game.openSpread);
+  return game.publicPct > 55 ? game.awayTeam : game.homeTeam;
 }
 
 function getSportColor(sport) {
   return sport === "NBA" ? "#f97316" : sport === "NCAAB" ? "#3b82f6" : "#10b981";
 }
-
-// ─────────────────────────────────────────────
-//  COMPONENTS
-// ─────────────────────────────────────────────
 
 function Spinner() {
   return (
@@ -96,7 +71,7 @@ function SportBadge({ sport }) {
 }
 
 function MoveBadge({ game }) {
-  const size = getMoveSize(game);
+  const size = Math.abs(game.currentSpread - game.openSpread);
   const rlm = getRLM(game);
   if (size < 0.5) return <span style={{ fontSize: 10, color: "#374151" }}>STABLE</span>;
   if (rlm) return (
@@ -139,7 +114,6 @@ function PublicMeter({ pct, homeTeam }) {
 function GameCard({ game, selected, onSelect, watchlisted, onWatchlist }) {
   const rlm = getRLM(game);
   const sportColor = getSportColor(game.sport);
-
   return (
     <div
       onClick={() => onSelect(game)}
@@ -150,12 +124,10 @@ function GameCard({ game, selected, onSelect, watchlisted, onWatchlist }) {
         background: selected ? "#0a1628" : "transparent",
         cursor: "pointer",
         transition: "all 0.15s ease",
-        position: "relative",
       }}
       onMouseEnter={e => { if (!selected) e.currentTarget.style.background = "#070d1a"; }}
       onMouseLeave={e => { if (!selected) e.currentTarget.style.background = "transparent"; }}
     >
-      {/* Top row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <SportBadge sport={game.sport} />
@@ -170,18 +142,13 @@ function GameCard({ game, selected, onSelect, watchlisted, onWatchlist }) {
               fontSize: 13, opacity: watchlisted ? 1 : 0.25,
               transition: "opacity 0.15s",
             }}
-            title={watchlisted ? "Remove from watchlist" : "Add to watchlist"}
           >★</button>
         </div>
       </div>
-
-      {/* Teams */}
       <div style={{ marginBottom: 10 }}>
         <div style={{ fontSize: 11, color: "#6b7280", marginBottom: 2 }}>{game.awayTeam}</div>
         <div style={{ fontSize: 13, fontWeight: 600, color: "#f9fafb" }}>@ {game.homeTeam}</div>
       </div>
-
-      {/* Stats row */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
         {[
           { label: "Open", val: fmt(game.openSpread) },
@@ -197,10 +164,7 @@ function GameCard({ game, selected, onSelect, watchlisted, onWatchlist }) {
           </div>
         ))}
       </div>
-
       <PublicMeter pct={game.publicPct} homeTeam={game.homeTeam} />
-
-      {/* RLM Alert */}
       {rlm && (
         <div style={{
           marginTop: 8, padding: "6px 10px", borderRadius: 4,
@@ -239,19 +203,18 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
     setMessages(newHistory);
     try {
       const res = await fetch("/api/analyze", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    system: SHARP_SYSTEM_PROMPT,
-    messages: newHistory,
-  }),
-});
-const data = await res.json();
-const reply = data?.content?.[0]?.text || data?.error || "Unable to generate analysis.";
-      const updated = [...newHistory, { role: "assistant", content: reply }];
-      setMessages(updated);
-    } catch {
-      setMessages([...newHistory, { role: "assistant", content: "⚠️ API error. Make sure you're running this in Claude.ai." }]);
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          system: SHARP_SYSTEM_PROMPT,
+          messages: newHistory,
+        }),
+      });
+      const data = await res.json();
+      const reply = data?.content?.[0]?.text || data?.error?.message || data?.error || "Unable to generate analysis.";
+      setMessages([...newHistory, { role: "assistant", content: reply }]);
+    } catch (err) {
+      setMessages([...newHistory, { role: "assistant", content: `Error: ${err.message}` }]);
     }
     setLoading(false);
   }, []);
@@ -269,8 +232,7 @@ const reply = data?.content?.[0]?.text || data?.error || "Unable to generate ana
 
   const handleSend = () => {
     if (!input.trim() || loading) return;
-    const ctx = buildContext(game);
-    const fullMsg = `${ctx}\n\nFollow-up: ${input}`;
+    const fullMsg = `${buildContext(game)}\n\nFollow-up: ${input}`;
     setInput("");
     sendMessage(fullMsg, messages);
   };
@@ -280,7 +242,6 @@ const reply = data?.content?.[0]?.text || data?.error || "Unable to generate ana
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#020810" }}>
-      {/* Panel header */}
       <div style={{
         padding: "14px 18px", borderBottom: "1px solid #0f172a",
         background: "#030c1a", flexShrink: 0,
@@ -302,8 +263,6 @@ const reply = data?.content?.[0]?.text || data?.error || "Unable to generate ana
             borderRadius: 4, padding: "4px 10px", cursor: "pointer", fontSize: 11,
           }}>✕</button>
         </div>
-
-        {/* Quick stats */}
         <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
           {[
             { label: "Open", val: fmt(game.openSpread) },
@@ -323,7 +282,6 @@ const reply = data?.content?.[0]?.text || data?.error || "Unable to generate ana
         </div>
       </div>
 
-      {/* Chat messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px" }}>
         {messages.length === 0 && !loading && (
           <div style={{ textAlign: "center", color: "#1f2937", marginTop: 40, fontSize: 12 }}>
@@ -337,7 +295,6 @@ const reply = data?.content?.[0]?.text || data?.error || "Unable to generate ana
             borderRadius: 8, padding: "14px 16px", marginBottom: 12,
             fontSize: 12, lineHeight: 1.8, color: "#cbd5e1",
             whiteSpace: "pre-wrap",
-            animation: "fadeUp 0.3s ease forwards",
           }}>
             {m.content}
           </div>
@@ -351,7 +308,6 @@ const reply = data?.content?.[0]?.text || data?.error || "Unable to generate ana
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div style={{
         padding: "12px 16px", borderTop: "1px solid #0f172a",
         background: "#030c1a", flexShrink: 0,
@@ -369,8 +325,7 @@ const reply = data?.content?.[0]?.text || data?.error || "Unable to generate ana
             style={{
               flex: 1, background: "#0a1220", border: "1px solid #1f2937",
               borderRadius: 6, padding: "9px 12px", color: "#e2e8f0",
-              fontSize: 12, fontFamily: "inherit", resize: "none",
-              outline: "none",
+              fontSize: 12, fontFamily: "inherit", resize: "none", outline: "none",
             }}
             onFocus={e => e.target.style.borderColor = "#3b82f6"}
             onBlur={e => e.target.style.borderColor = "#1f2937"}
@@ -392,15 +347,12 @@ const reply = data?.content?.[0]?.text || data?.error || "Unable to generate ana
   );
 }
 
-// ─────────────────────────────────────────────
-//  MAIN APP
-// ─────────────────────────────────────────────
 export default function SharplineApp() {
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [watchlist, setWatchlist] = useState(new Set());
   const [sportFilter, setSportFilter] = useState("ALL");
-  const [view, setView] = useState("all"); // "all" | "watchlist"
+  const [view, setView] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [fetching, setFetching] = useState(false);
   const [mobileShowPanel, setMobileShowPanel] = useState(false);
@@ -409,7 +361,6 @@ export default function SharplineApp() {
     setFetching(true);
     if (DEMO_MODE) {
       await new Promise(r => setTimeout(r, 600));
-      // Simulate minor line drift in demo mode
       setGames(prev => {
         if (prev.length === 0) return DEMO_GAMES;
         return prev.map(g => ({
@@ -430,7 +381,7 @@ export default function SharplineApp() {
             `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${ODDS_API_KEY}&regions=us&markets=spreads,totals&oddsFormat=american`
           );
           const data = await res.json();
-          data.slice(0, 8).forEach((g, i) => {
+          data.slice(0, 8).forEach(g => {
             const spreadMkt = g.bookmakers?.[0]?.markets?.find(m => m.key === "spreads");
             const totalMkt = g.bookmakers?.[0]?.markets?.find(m => m.key === "totals");
             const homeSpread = spreadMkt?.outcomes?.find(o => o.name === g.home_team)?.point ?? 0;
@@ -440,7 +391,7 @@ export default function SharplineApp() {
               sport: sport.includes("nba") ? "NBA" : "NCAAB",
               homeTeam: g.home_team,
               awayTeam: g.away_team,
-              openSpread: homeSpread + (Math.random() > 0.5 ? 1 : -1),
+              openSpread: parseFloat((homeSpread + (Math.random() > 0.5 ? 1 : -1)).toFixed(1)),
               currentSpread: homeSpread,
               total,
               publicPct: Math.floor(Math.random() * 45) + 30,
@@ -461,7 +412,7 @@ export default function SharplineApp() {
 
   useEffect(() => { loadGames(); }, [loadGames]);
   useEffect(() => {
-    const interval = setInterval(loadGames, 60000); // refresh every 60s
+    const interval = setInterval(loadGames, 300000);
     return () => clearInterval(interval);
   }, [loadGames]);
 
@@ -498,12 +449,10 @@ export default function SharplineApp() {
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 2px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         .live-pulse { animation: pulse 2s ease-in-out infinite; }
       `}</style>
 
-      {/* ── HEADER ── */}
       <header style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "12px 20px", borderBottom: "1px solid #0f172a",
@@ -525,7 +474,6 @@ export default function SharplineApp() {
             }}>DEMO</span>
           )}
         </div>
-
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {rlmCount > 0 && (
             <div style={{
@@ -545,6 +493,7 @@ export default function SharplineApp() {
               padding: "5px 10px", fontSize: 10, cursor: fetching ? "not-allowed" : "pointer",
               display: "flex", alignItems: "center", gap: 5,
               letterSpacing: "0.08em", textTransform: "uppercase",
+              fontFamily: "inherit",
             }}
           >
             {fetching ? <><Spinner /><span>Updating</span></> : "↺ Refresh"}
@@ -557,13 +506,11 @@ export default function SharplineApp() {
         </div>
       </header>
 
-      {/* ── FILTER BAR ── */}
       <div style={{
         display: "flex", alignItems: "center", gap: 8,
         padding: "8px 16px", borderBottom: "1px solid #0a0f1a",
         background: "#020810", flexShrink: 0, overflowX: "auto",
       }}>
-        {/* View toggle */}
         <div style={{ display: "flex", gap: 4, marginRight: 8 }}>
           {[["all", "All Games"], ["watchlist", `★ Watchlist (${watchlist.size})`]].map(([v, label]) => (
             <button key={v} onClick={() => setView(v)} style={{
@@ -587,20 +534,13 @@ export default function SharplineApp() {
         ))}
       </div>
 
-      {/* ── MAIN CONTENT ── */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Game list — always visible on desktop, hidden on mobile when panel open */}
         <div style={{
           width: 340, borderRight: "1px solid #0a0f1a",
           overflowY: "auto", flexShrink: 0,
           display: mobileShowPanel ? "none" : "block",
-        }}
-          className="game-list"
-        >
-          <style>{`
-            @media (min-width: 640px) { .game-list { display: block !important; } }
-          `}</style>
-
+        }}>
+          <style>{`@media (min-width: 640px) { .game-list-panel { display: block !important; } }`}</style>
           {displayed.length === 0 ? (
             <div style={{ padding: 32, textAlign: "center", color: "#1f2937", fontSize: 12 }}>
               {view === "watchlist" ? "No games on your watchlist yet.\nClick ★ on any game to add it." : "No games found."}
@@ -617,13 +557,7 @@ export default function SharplineApp() {
           ))}
         </div>
 
-        {/* Analysis panel */}
-        <div style={{
-          flex: 1, overflow: "hidden",
-          display: (!mobileShowPanel && !selectedGame) ? "flex" : "flex",
-          flexDirection: "column",
-        }}>
-          {/* Mobile back button */}
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {mobileShowPanel && (
             <button
               onClick={() => setMobileShowPanel(false)}
@@ -634,13 +568,8 @@ export default function SharplineApp() {
                 color: "#6b7280", fontSize: 11, cursor: "pointer",
                 fontFamily: "inherit", letterSpacing: "0.08em",
               }}
-              className="mobile-back"
-            >
-              <style>{`@media (min-width: 640px) { .mobile-back { display: none !important; } }`}</style>
-              ← Back to Games
-            </button>
+            >← Back to Games</button>
           )}
-
           {selectedGame ? (
             <AnalysisPanel
               key={selectedGame.id}
@@ -658,20 +587,8 @@ export default function SharplineApp() {
                 SELECT A GAME TO ANALYZE
               </div>
               <div style={{ fontSize: 11, color: "#0f172a", maxWidth: 280, lineHeight: 1.6 }}>
-                Tap any game on the left to get a full AI-powered sharp analysis,
-                including line movement signals, public bias, and edge summary.
+                Tap any game to get a full AI-powered sharp analysis including line movement signals, public bias, and edge summary.
               </div>
-              {DEMO_MODE && (
-                <div style={{
-                  marginTop: 16, padding: "10px 16px", borderRadius: 6,
-                  background: "#f59e0b08", border: "1px solid #f59e0b1a",
-                  fontSize: 10, color: "#78350f", maxWidth: 300, lineHeight: 1.7,
-                }}>
-                  <strong style={{ color: "#f59e0b" }}>DEMO MODE</strong><br />
-                  Add your free Odds API key to get live data.<br />
-                  See the setup guide below the app.
-                </div>
-              )}
             </div>
           )}
         </div>
