@@ -10,6 +10,11 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icon-512.png" />
     <title>Sharpline</title>
+    <script>
+      const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.style.backgroundColor = dark ? '#030c1a' : '#fdf8f0';
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#030c1a' : '#ffffff');
+    </script>
   </head>
   <body>
     <div id="root"></div>
