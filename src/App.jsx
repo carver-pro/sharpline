@@ -105,6 +105,13 @@ function getSportColor(sport) {
 
 function isNeutralSite(game) {
   const label = (game.label || "").toLowerCase();
+  
+  // NIT early rounds are home games — only semifinals and finals are neutral
+  if (label.includes("nit")) {
+    return label.includes("final") || label.includes("semifinal") || label.includes("championship");
+  }
+  
+  // Everything else — NCAA Tournament, bowl games, championships
   return label.includes("neutral") || label.includes("tournament") ||
     label.includes("bowl") || label.includes("final") || label.includes("championship");
 }
