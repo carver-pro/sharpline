@@ -476,14 +476,17 @@ export default function SharplineApp() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {rlmCount > 0 && (
-            <div style={{
-              fontSize: 10, color: "#f59e0b", fontWeight: 600,
-              background: "#f59e0b0f", border: "1px solid #f59e0b22",
-              padding: "3px 8px", borderRadius: 4,
-            }}>
-              ⚡ {rlmCount} RLM signal{rlmCount > 1 ? "s" : ""}
-            </div>
-          )}
+  <div
+    onClick={() => { setView("rlm"); setSelectedGame(null); setMobileShowPanel(false); }}
+    style={{
+      fontSize: 10, color: "#f59e0b", fontWeight: 600,
+      background: "#f59e0b0f", border: "1px solid #f59e0b22",
+      padding: "3px 8px", borderRadius: 4, cursor: "pointer",
+    }}
+  >
+    ⚡ {rlmCount} RLM signal{rlmCount > 1 ? "s" : ""}
+  </div>
+)}
           <button
             onClick={loadGames}
             disabled={fetching}
