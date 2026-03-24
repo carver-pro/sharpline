@@ -46,13 +46,28 @@ Rules:
 - Think in closing line value. Is the current number beatable at close?
 - Keep responses under 550 words. Use the labeled sections above.`;
 
+function fmtGameTime(dateStr) {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const isToday = d.toDateString() === today.toDateString();
+  const isTomorrow = d.toDateString() === tomorrow.toDateString();
+  const dayLabel = isToday ? "Today" : isTomorrow ? "Tomorrow" : d.toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" });
+  const timeLabel = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" });
+  return `${dayLabel} · ${timeLabel}`;
+}
+
+const now = new Date();
+const todayStr = (h, m) => { const d = new Date(now); d.setHours(h, m, 0, 0); return d.toISOString(); };
+const tomorrowStr = (h, m) => { const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(h, m, 0, 0); return d.toISOString(); };
+
 const DEMO_GAMES = [
-  { id: "g1", sport: "NCAAB", homeTeam: "Duke Blue Devils", awayTeam: "North Carolina Tar Heels", openSpread: -4.5, currentSpread: -6.5, total: 152.5, publicPct: 68, time: "7:00 PM ET", label: "NCAA Tournament — Neutral Site" },
-  { id: "g2", sport: "NCAAB", homeTeam: "Houston Cougars", awayTeam: "Tennessee Volunteers", openSpread: -2.0, currentSpread: -1.0, total: 131.0, publicPct: 38, time: "9:30 PM ET", label: "NCAA Tournament — Neutral Site" },
-  { id: "g3", sport: "NBA", homeTeam: "Boston Celtics", awayTeam: "Milwaukee Bucks", openSpread: -5.5, currentSpread: -4.0, total: 224.5, publicPct: 71, time: "8:00 PM ET", label: "Eastern Conference" },
-  { id: "g4", sport: "NBA", homeTeam: "OKC Thunder", awayTeam: "Denver Nuggets", openSpread: -3.0, currentSpread: -4.5, total: 218.0, publicPct: 55, time: "10:00 PM ET", label: "Western Conference" },
-  { id: "g5", sport: "MLB", homeTeam: "New York Yankees", awayTeam: "Boston Red Sox", openSpread: -1.5, currentSpread: -1.5, total: 8.5, publicPct: 72, time: "1:05 PM ET", label: "AL East — Opening Day" },
-  { id: "g6", sport: "MLB", homeTeam: "Los Angeles Dodgers", awayTeam: "San Francisco Giants", openSpread: -1.5, currentSpread: -1.5, total: 7.5, publicPct: 65, time: "4:10 PM ET", label: "NL West — Opening Day" },
+  { id: "g1", sport: "NCAAB", homeTeam: "Duke Blue Devils", awayTeam: "North Carolina Tar Heels", openSpread: -4.5, currentSpread: -6.5, total: 152.5, publicPct: 68, commenceTime: todayStr(19, 0), time: fmtGameTime(todayStr(19, 0)), label: "NCAA Tournament — Neutral Site" },
+  { id: "g2", sport: "NCAAB", homeTeam: "Houston Cougars", awayTeam: "Tennessee Volunteers", openSpread: -2.0, currentSpread: -1.0, total: 131.0, publicPct: 38, commenceTime: todayStr(21, 30), time: fmtGameTime(todayStr(21, 30)), label: "NCAA Tournament — Neutral Site" },
+  { id: "g3", sport: "NBA", homeTeam: "Boston Celtics", awayTeam: "Milwaukee Bucks", openSpread: -5.5, currentSpread: -4.0, total: 224.5, publicPct: 71, commenceTime: todayStr(20, 0), time: fmtGameTime(todayStr(20, 0)), label: "Eastern Conference" },
+  { id: "g4", sport: "NBA", homeTeam: "OKC Thunder", awayTeam: "Denver Nuggets", openSpread: -3.0, currentSpread: -4.5, total: 218.0, publicPct: 55, commenceTime: todayStr(22, 0), time: fmtGameTime(todayStr(22, 0)), label: "Western Conference" },
+  { id: "g5", sport: "MLB", homeTeam: "New York Yankees", awayTeam: "Boston Red Sox", openSpread: -1.5, currentSpread: -1.5, total: 8.5, publicPct: 72, commenceTime: tomorrowStr(13, 5), time: fmtGameTime(tomorrowStr(13, 5)), label: "AL East" },
+  { id: "g6", sport: "MLB", homeTeam: "Los Angeles Dodgers", awayTeam: "San Francisco Giants", openSpread: -1.5, currentSpread: -1.5, total: 7.5, publicPct: 65, commenceTime: tomorrowStr(16, 10), time: fmtGameTime(tomorrowStr(16, 10)), label: "NL West" },
 ];
 
 const THEMES = {
@@ -529,7 +544,7 @@ export default function SharplineApp() {
   const [view, setView] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
   const [fetching, setFetching] = useState(false);
-  const [isDark, setIsDark] = useState(window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [isDark, setIsDark] = useState(true);
 
   const t = isDark ? THEMES.dark : THEMES.light;
 
@@ -585,7 +600,8 @@ export default function SharplineApp() {
               openSpread: parseFloat((homeSpread + (Math.random() > 0.5 ? 0.5 : -0.5)).toFixed(1)),
               currentSpread: parseFloat(homeSpread.toFixed(1)),
               total, publicPct: Math.floor(Math.random() * 45) + 30,
-              time: new Date(g.commence_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" }),
+              commenceTime: g.commence_time,
+              time: fmtGameTime(g.commence_time),
               label: isNCAAT ? "NCAA Tournament — Neutral Site" : sport.label === "MLB" ? "MLB Regular Season" : sport.label,
             });
           });
@@ -609,7 +625,8 @@ export default function SharplineApp() {
   const rlmCount = games.filter(getRLM).length;
   const displayed = games
     .filter(g => view === "rlm" ? getRLM(g) : true)
-    .filter(g => sportFilter === "ALL" || g.sport === sportFilter);
+    .filter(g => sportFilter === "ALL" || g.sport === sportFilter)
+    .sort((a, b) => new Date(a.commenceTime) - new Date(b.commenceTime));
 
   return (
     <div style={{
@@ -708,7 +725,7 @@ export default function SharplineApp() {
       }}>
         <div style={{ display: "flex", gap: 4, marginRight: 6 }}>
           {[["all", "All Games"], ["rlm", `⚡ RLM (${rlmCount})`]].map(([v, label]) => (
-            <button key={v} onClick={() => { setView(v); setSelectedGame(null); }} style={{
+            <button key={v} onClick={() => { setView(v); setSelectedGame(null); if (v === "all") setSportFilter("ALL"); }} style={{
               padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
               fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: "0.04em",
               cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s",
