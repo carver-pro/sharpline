@@ -30,6 +30,74 @@ const DEMO_GAMES = [
   { id: "g6", sport: "NBA", homeTeam: "Cleveland Cavaliers", awayTeam: "New York Knicks", openSpread: -2.5, currentSpread: -3.5, total: 211.5, publicPct: 47, time: "7:30 PM ET", label: "Eastern Conference" },
 ];
 
+// ── THEME DEFINITIONS ──
+const THEMES = {
+  dark: {
+    bg: "#020810",
+    bgHeader: "#030c1a",
+    bgCard: "#0a1628",
+    bgCardHover: "#070d1a",
+    bgInput: "#0a1220",
+    bgStat: "#0a0f1a",
+    bgAnalysis: "#070f1e",
+    bgButton: "#0a1220",
+    bgButtonActive: "#1e3a5f",
+    border: "#0a0f1a",
+    borderHeader: "#0f172a",
+    borderStat: "#0f172a",
+    borderStatHi: "#1e3a5f",
+    borderInput: "#1f2937",
+    text: "#f9fafb",
+    textSub: "#6b7280",
+    textMuted: "#9ca3af",
+    textFaint: "#4b5563",
+    textPlaceholder: "#6b7280",
+    textAnalysis: "#cbd5e1",
+    textHeader: "#374151",
+    filterText: "#374151",
+    filterTextActive: "#93c5fd",
+    rlmBg: "#f59e0b0f",
+    rlmBorder: "#f59e0b33",
+    statBg: "#0a1220",
+    statBorder: "#111827",
+    emptyText: "#9ca3af",
+    emptySubText: "#6b7280",
+    scrollThumb: "#1f2937",
+  },
+  light: {
+    bg: "#fdf8f0",
+    bgHeader: "#ffffff",
+    bgCard: "#fef9f2",
+    bgCardHover: "#fdf3e3",
+    bgInput: "#fdf8f0",
+    bgStat: "#fef9f2",
+    bgAnalysis: "#fffbf5",
+    bgButton: "#f5ede0",
+    bgButtonActive: "#dbeafe",
+    border: "#e8ddd0",
+    borderHeader: "#e8ddd0",
+    borderStat: "#e8ddd0",
+    borderStatHi: "#93c5fd",
+    borderInput: "#d1c4b0",
+    text: "#1a1208",
+    textSub: "#5c4a2a",
+    textMuted: "#7c6545",
+    textFaint: "#9c8060",
+    textPlaceholder: "#9c8060",
+    textAnalysis: "#2d1f0a",
+    textHeader: "#7c6545",
+    filterText: "#7c6545",
+    filterTextActive: "#1d4ed8",
+    rlmBg: "#fef3c7",
+    rlmBorder: "#fcd34d",
+    statBg: "#fef3e2",
+    statBorder: "#e8ddd0",
+    emptyText: "#5c4a2a",
+    emptySubText: "#7c6545",
+    scrollThumb: "#d1c4b0",
+  }
+};
+
 function fmt(n) {
   const v = parseFloat(n);
   return v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1);
@@ -49,11 +117,11 @@ function getSportColor(sport) {
   return sport === "NBA" ? "#f97316" : sport === "NCAAB" ? "#3b82f6" : sport === "MLB" ? "#10b981" : "#a855f7";
 }
 
-function Spinner() {
+function Spinner({ t }) {
   return (
     <div style={{
       width: 18, height: 18, borderRadius: "50%",
-      border: "2px solid #1f2937", borderTopColor: "#3b82f6",
+      border: `2px solid ${t.borderInput}`, borderTopColor: "#3b82f6",
       animation: "spin 0.7s linear infinite", flexShrink: 0,
     }} />
   );
@@ -64,44 +132,46 @@ function SportBadge({ sport }) {
   return (
     <span style={{
       fontSize: 9, fontWeight: 800, letterSpacing: "0.12em",
-      color, border: `1px solid ${color}22`,
-      background: `${color}14`, padding: "2px 6px", borderRadius: 3,
+      color, border: `1px solid ${color}33`,
+      background: `${color}18`, padding: "2px 6px", borderRadius: 3,
+      fontFamily: "'Inter', sans-serif",
     }}>{sport}</span>
   );
 }
 
-function MoveBadge({ game }) {
+function MoveBadge({ game, t }) {
   const size = Math.abs(game.currentSpread - game.openSpread);
   const rlm = getRLM(game);
-  if (size < 0.5) return <span style={{ fontSize: 10, color: "#374151" }}>STABLE</span>;
+  if (size < 0.5) return <span style={{ fontSize: 10, color: t.textFaint, fontFamily: "'Inter', sans-serif" }}>STABLE</span>;
   if (rlm) return (
     <span style={{
       fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-      color: "#f59e0b", background: "#f59e0b14",
-      border: "1px solid #f59e0b33", padding: "2px 7px", borderRadius: 3,
+      color: "#d97706", background: "#fef3c7",
+      border: "1px solid #fcd34d", padding: "2px 7px", borderRadius: 3,
+      fontFamily: "'Inter', sans-serif",
     }}>⚡ RLM</span>
   );
   return (
     <span style={{
-      fontSize: 10, fontWeight: 700, color: "#6b7280",
-      background: "#111827", border: "1px solid #1f2937",
-      padding: "2px 7px", borderRadius: 3,
+      fontSize: 10, fontWeight: 700, color: t.textMuted,
+      background: t.bgButton, border: `1px solid ${t.border}`,
+      padding: "2px 7px", borderRadius: 3, fontFamily: "'Inter', sans-serif",
     }}>MOVED {fmt(game.currentSpread - game.openSpread)}</span>
   );
 }
 
-function PublicMeter({ pct, homeTeam }) {
+function PublicMeter({ pct, homeTeam, t }) {
   const heavy = pct > 65;
   const color = heavy ? "#ef4444" : "#3b82f6";
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-        <span style={{ fontSize: 9, color: "#4b5563", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+        <span style={{ fontSize: 9, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'Inter', sans-serif" }}>
           Public on {homeTeam.split(" ").pop()}
         </span>
-        <span style={{ fontSize: 10, fontWeight: 700, color: heavy ? "#ef4444" : "#9ca3af" }}>{pct}%</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: heavy ? "#ef4444" : t.textMuted, fontFamily: "'Inter', sans-serif" }}>{pct}%</span>
       </div>
-      <div style={{ height: 3, background: "#111827", borderRadius: 2, overflow: "hidden" }}>
+      <div style={{ height: 3, background: t.border, borderRadius: 2, overflow: "hidden" }}>
         <div style={{
           height: "100%", width: `${pct}%`, background: color,
           borderRadius: 2, transition: "width 1s ease",
@@ -111,33 +181,34 @@ function PublicMeter({ pct, homeTeam }) {
   );
 }
 
-function GameCard({ game, selected, onSelect }) {
+function GameCard({ game, selected, onSelect, t }) {
   const rlm = getRLM(game);
   const sportColor = getSportColor(game.sport);
+  const [hovered, setHovered] = useState(false);
   return (
     <div
       onClick={() => onSelect(game)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
         padding: "14px 16px",
-        borderBottom: "1px solid #0a0f1a",
+        borderBottom: `1px solid ${t.border}`,
         borderLeft: `3px solid ${selected ? sportColor : "transparent"}`,
-        background: selected ? "#0a1628" : "transparent",
+        background: selected ? t.bgCard : hovered ? t.bgCardHover : "transparent",
         cursor: "pointer",
         transition: "all 0.15s ease",
       }}
-      onMouseEnter={e => { if (!selected) e.currentTarget.style.background = "#070d1a"; }}
-      onMouseLeave={e => { if (!selected) e.currentTarget.style.background = "transparent"; }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <SportBadge sport={game.sport} />
-          <span style={{ fontSize: 9, color: "#374151" }}>{game.time}</span>
+          <span style={{ fontSize: 9, color: t.textFaint, fontFamily: "'Inter', sans-serif" }}>{game.time}</span>
         </div>
-        <MoveBadge game={game} />
+        <MoveBadge game={game} t={t} />
       </div>
       <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 12, color: "#6b7280", marginBottom: 3, fontFamily: "'Inter', sans-serif" }}>{game.awayTeam}</div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "#f9fafb", fontFamily: "'Inter', sans-serif" }}>@ {game.homeTeam}</div>
+        <div style={{ fontSize: 12, color: t.textSub, marginBottom: 3, fontFamily: "'Inter', sans-serif" }}>{game.awayTeam}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: t.text, fontFamily: "'Inter', sans-serif" }}>@ {game.homeTeam}</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
         {[
@@ -146,20 +217,20 @@ function GameCard({ game, selected, onSelect }) {
           { label: "O/U", val: game.total },
         ].map(s => (
           <div key={s.label} style={{
-            background: "#0a0f1a", borderRadius: 4, padding: "5px 8px",
-            border: `1px solid ${s.hi ? "#1e3a5f" : "#0f172a"}`,
+            background: t.statBg, borderRadius: 4, padding: "5px 8px",
+            border: `1px solid ${s.hi ? t.borderStatHi : t.statBorder}`,
           }}>
-            <div style={{ fontSize: 8, color: "#374151", letterSpacing: "0.1em", textTransform: "uppercase" }}>{s.label}</div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: s.hi ? "#60a5fa" : "#d1d5db" }}>{s.val}</div>
+            <div style={{ fontSize: 8, color: t.textFaint, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: "'Inter', sans-serif" }}>{s.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: s.hi ? "#2563eb" : t.text, fontFamily: "'Inter', sans-serif" }}>{s.val}</div>
           </div>
         ))}
       </div>
-      <PublicMeter pct={game.publicPct} homeTeam={game.homeTeam} />
+      <PublicMeter pct={game.publicPct} homeTeam={game.homeTeam} t={t} />
       {rlm && (
         <div style={{
           marginTop: 8, padding: "6px 10px", borderRadius: 4,
-          background: "#f59e0b0d", border: "1px solid #f59e0b22",
-          fontSize: 10, color: "#f59e0b", fontWeight: 600,
+          background: t.rlmBg, border: `1px solid ${t.rlmBorder}`,
+          fontSize: 10, color: "#d97706", fontWeight: 700,
           fontFamily: "'Inter', sans-serif",
         }}>
           ⚡ Sharp money on {getSharpSide(game).split(" ").slice(-1)[0]}
@@ -169,46 +240,39 @@ function GameCard({ game, selected, onSelect }) {
   );
 }
 
-// ── Formats AI response into readable sections ──
-function FormattedAnalysis({ content }) {
+function FormattedAnalysis({ content, t }) {
   const lines = content.split("\n");
   return (
     <div style={{ fontFamily: "'Inter', sans-serif" }}>
       {lines.map((line, i) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} style={{ height: 10 }} />;
-
-        // Section headers like "1. LINE MOVEMENT —" or "EDGE SUMMARY —"
         const isHeader = /^(\d+\.|[A-Z\s]{4,})\s*[—-]/.test(trimmed) || /^[A-Z\s]{6,}:/.test(trimmed);
         if (isHeader) {
           return (
             <div key={i} style={{
-              fontSize: 11, fontWeight: 700, color: "#60a5fa",
+              fontSize: 11, fontWeight: 700, color: "#2563eb",
               letterSpacing: "0.08em", textTransform: "uppercase",
               marginTop: 16, marginBottom: 6,
-              paddingBottom: 4, borderBottom: "1px solid #0f172a",
+              paddingBottom: 4, borderBottom: `1px solid ${t.border}`,
             }}>{trimmed}</div>
           );
         }
-
-        // Edge summary line gets special treatment
         const isEdge = trimmed.toLowerCase().includes("edge summary") || trimmed.toLowerCase().includes("recommendation");
         if (isEdge) {
           return (
             <div key={i} style={{
-              fontSize: 14, fontWeight: 700, color: "#f59e0b",
-              letterSpacing: "0.04em", marginTop: 16, marginBottom: 6,
-              padding: "8px 12px", background: "#f59e0b0d",
-              border: "1px solid #f59e0b22", borderRadius: 6,
+              fontSize: 14, fontWeight: 700, color: "#d97706",
+              marginTop: 16, marginBottom: 6,
+              padding: "8px 12px", background: t.rlmBg,
+              border: `1px solid ${t.rlmBorder}`, borderRadius: 6,
             }}>{trimmed}</div>
           );
         }
-
-        // Bullet points
         if (trimmed.startsWith("-") || trimmed.startsWith("•")) {
           return (
             <div key={i} style={{
-              fontSize: 14, color: "#cbd5e1", lineHeight: 1.7,
+              fontSize: 14, color: t.textAnalysis, lineHeight: 1.75,
               paddingLeft: 16, marginBottom: 4, position: "relative",
             }}>
               <span style={{ position: "absolute", left: 0, color: "#3b82f6" }}>›</span>
@@ -216,11 +280,9 @@ function FormattedAnalysis({ content }) {
             </div>
           );
         }
-
-        // Regular text
         return (
           <div key={i} style={{
-            fontSize: 14, color: "#cbd5e1", lineHeight: 1.8, marginBottom: 4,
+            fontSize: 14, color: t.textAnalysis, lineHeight: 1.85, marginBottom: 4,
           }}>{trimmed}</div>
         );
       })}
@@ -228,7 +290,7 @@ function FormattedAnalysis({ content }) {
   );
 }
 
-function AnalysisPanel({ game, onClose }) {
+function AnalysisPanel({ game, onClose, t }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -255,10 +317,7 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system: SHARP_SYSTEM_PROMPT,
-          messages: newHistory,
-        }),
+        body: JSON.stringify({ system: SHARP_SYSTEM_PROMPT, messages: newHistory }),
       });
       const data = await res.json();
       const reply = data?.content?.[0]?.text || data?.error?.message || data?.error || "Unable to generate analysis.";
@@ -276,99 +335,81 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
     }
   }, [game, autoRan, sendMessage, buildContext]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
 
   const handleSend = () => {
     if (!input.trim() || loading) return;
-    const fullMsg = `${buildContext(game)}\n\nFollow-up: ${input}`;
     setInput("");
-    sendMessage(fullMsg, messages);
+    sendMessage(`${buildContext(game)}\n\nFollow-up: ${input}`, messages);
   };
 
   if (!game) return null;
   const sportColor = getSportColor(game.sport);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#020810" }}>
-      {/* Panel header */}
-      <div style={{
-        padding: "14px 18px", borderBottom: "1px solid #0f172a",
-        background: "#030c1a", flexShrink: 0,
-      }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: t.bg }}>
+      <div style={{ padding: "14px 18px", borderBottom: `1px solid ${t.borderHeader}`, background: t.bgHeader, flexShrink: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 4 }}>
               <SportBadge sport={game.sport} />
-              <span style={{ fontSize: 9, color: "#374151", fontFamily: "'Inter', sans-serif" }}>{game.label} · {game.time}</span>
+              <span style={{ fontSize: 9, color: t.textFaint, fontFamily: "'Inter', sans-serif" }}>{game.label} · {game.time}</span>
             </div>
-            <div style={{
-              fontSize: 16, fontWeight: 800, color: "#f9fafb",
-              fontFamily: "'Inter', sans-serif", letterSpacing: "0.01em",
-            }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: t.text, fontFamily: "'Inter', sans-serif" }}>
               {game.awayTeam}
-              <span style={{ color: "#374151", margin: "0 8px", fontWeight: 400 }}>@</span>
+              <span style={{ color: t.textFaint, margin: "0 8px", fontWeight: 400 }}>@</span>
               <span style={{ color: sportColor }}>{game.homeTeam}</span>
             </div>
           </div>
           <button onClick={onClose} style={{
-            background: "#111827", border: "1px solid #1f2937", color: "#6b7280",
-            borderRadius: 4, padding: "4px 10px", cursor: "pointer", fontSize: 11,
-            fontFamily: "'Inter', sans-serif",
+            background: t.bgButton, border: `1px solid ${t.border}`,
+            color: t.textMuted, borderRadius: 4, padding: "4px 10px",
+            cursor: "pointer", fontSize: 11, fontFamily: "'Inter', sans-serif",
           }}>✕</button>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
           {[
             { label: "Open", val: fmt(game.openSpread) },
-            { label: "Current", val: fmt(game.currentSpread), color: "#60a5fa" },
-            { label: "Move", val: fmt(game.currentSpread - game.openSpread), color: Math.abs(game.currentSpread - game.openSpread) >= 1.5 ? "#f59e0b" : "#6b7280" },
+            { label: "Current", val: fmt(game.currentSpread), color: "#2563eb" },
+            { label: "Move", val: fmt(game.currentSpread - game.openSpread), color: Math.abs(game.currentSpread - game.openSpread) >= 1.5 ? "#d97706" : t.textMuted },
             { label: "Total", val: game.total },
-            { label: "Public", val: `${game.publicPct}%`, color: game.publicPct > 65 ? "#ef4444" : "#9ca3af" },
+            { label: "Public", val: `${game.publicPct}%`, color: game.publicPct > 65 ? "#ef4444" : t.textMuted },
           ].map(s => (
-            <div key={s.label} style={{
-              background: "#0a1220", border: "1px solid #111827",
-              borderRadius: 4, padding: "4px 10px",
-            }}>
-              <span style={{ fontSize: 9, color: "#374151", marginRight: 5, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Inter', sans-serif" }}>{s.label}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: s.color || "#d1d5db", fontFamily: "'Inter', sans-serif" }}>{s.val}</span>
+            <div key={s.label} style={{ background: t.statBg, border: `1px solid ${t.statBorder}`, borderRadius: 4, padding: "4px 10px" }}>
+              <span style={{ fontSize: 9, color: t.textFaint, marginRight: 5, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Inter', sans-serif" }}>{s.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: s.color || t.text, fontFamily: "'Inter', sans-serif" }}>{s.val}</span>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px", background: t.bg }}>
         {messages.length === 0 && !loading && (
-          <div style={{ textAlign: "center", color: "#1f2937", marginTop: 40 }}>
+          <div style={{ textAlign: "center", color: t.textMuted, marginTop: 40 }}>
             <div style={{ fontSize: 28, marginBottom: 8 }}>🎯</div>
             <div style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>Loading analysis...</div>
           </div>
         )}
         {messages.filter(m => m.role === "assistant").map((m, i) => (
           <div key={i} style={{
-            background: "#070f1e", border: "1px solid #0f172a",
+            background: t.bgAnalysis, border: `1px solid ${t.borderHeader}`,
             borderRadius: 8, padding: "16px 18px", marginBottom: 14,
           }}>
-            <FormattedAnalysis content={m.content} />
+            <FormattedAnalysis content={m.content} t={t} />
           </div>
         ))}
         {loading && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#374151", padding: "8px 0" }}>
-            <Spinner />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: t.textMuted, padding: "8px 0" }}>
+            <Spinner t={t} />
             <span style={{ fontSize: 13, fontFamily: "'Inter', sans-serif" }}>Analyzing matchup data...</span>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
-      <div style={{
-        padding: "12px 16px", borderTop: "1px solid #0f172a",
-        background: "#030c1a", flexShrink: 0,
-      }}>
-        <div style={{ fontSize: 10, color: "#1f2937", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
-          Ask a follow-up — e.g. "Is there a fade the public angle?" or "How does pace affect the total?"
+      <div style={{ padding: "12px 16px", borderTop: `1px solid ${t.borderHeader}`, background: t.bgHeader, flexShrink: 0 }}>
+        <div style={{ fontSize: 10, color: t.textFaint, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+          Ask a follow-up — e.g. "Fade the public?" or "How does pace affect the total?"
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <textarea
@@ -378,21 +419,20 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action on ${getSharpSide(g)}` : "No"}
             placeholder="Your question..."
             rows={2}
             style={{
-              flex: 1, background: "#0a1220", border: "1px solid #1f2937",
-              borderRadius: 6, padding: "10px 12px", color: "#e2e8f0",
-              fontSize: 14, fontFamily: "'Inter', sans-serif", resize: "none", outline: "none",
-              lineHeight: 1.6,
+              flex: 1, background: t.bgInput, border: `1px solid ${t.borderInput}`,
+              borderRadius: 6, padding: "10px 12px", color: t.text,
+              fontSize: 14, fontFamily: "'Inter', sans-serif", resize: "none", outline: "none", lineHeight: 1.6,
             }}
             onFocus={e => e.target.style.borderColor = "#3b82f6"}
-            onBlur={e => e.target.style.borderColor = "#1f2937"}
+            onBlur={e => e.target.style.borderColor = t.borderInput}
           />
           <button
             onClick={handleSend}
             disabled={loading || !input.trim()}
             style={{
               padding: "0 18px", borderRadius: 6, border: "none",
-              background: loading || !input.trim() ? "#111827" : "#2563eb",
-              color: loading || !input.trim() ? "#374151" : "#fff",
+              background: loading || !input.trim() ? t.bgButton : "#2563eb",
+              color: loading || !input.trim() ? t.textFaint : "#fff",
               fontSize: 18, cursor: loading || !input.trim() ? "not-allowed" : "pointer",
               transition: "all 0.15s",
             }}
@@ -411,6 +451,9 @@ export default function SharplineApp() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [fetching, setFetching] = useState(false);
   const [mobileShowPanel, setMobileShowPanel] = useState(false);
+  const [isDark, setIsDark] = useState(true);
+
+  const t = isDark ? THEMES.dark : THEMES.light;
 
   const loadGames = useCallback(async () => {
     setFetching(true);
@@ -420,9 +463,7 @@ export default function SharplineApp() {
         if (prev.length === 0) return DEMO_GAMES;
         return prev.map(g => ({
           ...g,
-          currentSpread: Math.random() > 0.8
-            ? parseFloat((g.currentSpread + (Math.random() > 0.5 ? 0.5 : -0.5)).toFixed(1))
-            : g.currentSpread,
+          currentSpread: Math.random() > 0.8 ? parseFloat((g.currentSpread + (Math.random() > 0.5 ? 0.5 : -0.5)).toFixed(1)) : g.currentSpread,
           publicPct: Math.min(95, Math.max(20, g.publicPct + (Math.random() > 0.5 ? 1 : -1))),
         }));
       });
@@ -436,23 +477,17 @@ export default function SharplineApp() {
             `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${ODDS_API_KEY}&regions=us&markets=spreads,totals&oddsFormat=american`
           );
           const data = await res.json();
-          if (!Array.isArray(data)) {
-            console.error("Odds API returned unexpected response:", data);
-            continue;
-          }
+          if (!Array.isArray(data)) { console.error("Odds API error:", data); continue; }
           data.slice(0, 20).forEach(g => {
             const spreadMkt = g.bookmakers?.[0]?.markets?.find(m => m.key === "spreads");
             const totalMkt = g.bookmakers?.[0]?.markets?.find(m => m.key === "totals");
             const homeSpread = spreadMkt?.outcomes?.find(o => o.name === g.home_team)?.point ?? 0;
             const total = totalMkt?.outcomes?.[0]?.point ?? 220;
             allGames.push({
-              id: g.id,
-              sport: sport.includes("nba") ? "NBA" : "NCAAB",
-              homeTeam: g.home_team,
-              awayTeam: g.away_team,
+              id: g.id, sport: sport.includes("nba") ? "NBA" : "NCAAB",
+              homeTeam: g.home_team, awayTeam: g.away_team,
               openSpread: parseFloat((homeSpread + (Math.random() > 0.5 ? 1 : -1)).toFixed(1)),
-              currentSpread: homeSpread,
-              total,
+              currentSpread: homeSpread, total,
               publicPct: Math.floor(Math.random() * 45) + 30,
               time: new Date(g.commence_time).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" }),
               label: sport.includes("nba") ? "NBA" : "College Basketball",
@@ -475,30 +510,20 @@ export default function SharplineApp() {
     return () => clearInterval(interval);
   }, [loadGames]);
 
-  const handleSelectGame = (game) => {
-    setSelectedGame(game);
-    setMobileShowPanel(true);
-  };
-
+  const handleSelectGame = (game) => { setSelectedGame(game); setMobileShowPanel(true); };
   const sports = ["ALL", "NCAAB", "NBA", "NFL", "MLB"];
   const rlmCount = games.filter(getRLM).length;
-
   const displayed = games
     .filter(g => view === "rlm" ? getRLM(g) : true)
     .filter(g => sportFilter === "ALL" || g.sport === sportFilter);
 
   return (
-    <div style={{
-      height: "100dvh", display: "flex", flexDirection: "column",
-      background: "#020810",
-      fontFamily: "'IBM Plex Mono', 'Courier New', monospace",
-      color: "#e2e8f0", overflow: "hidden",
-    }}>
+    <div style={{ height: "100dvh", display: "flex", flexDirection: "column", background: t.bg, fontFamily: "'IBM Plex Mono', monospace", color: t.text, overflow: "hidden", transition: "background 0.3s ease, color 0.3s ease" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb { background: ${t.scrollThumb}; border-radius: 2px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
         .live-pulse { animation: pulse 2s ease-in-out infinite; }
@@ -507,79 +532,79 @@ export default function SharplineApp() {
       {/* ── HEADER ── */}
       <header style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "10px 20px", borderBottom: "1px solid #0f172a",
-        background: "#030c1a", flexShrink: 0, zIndex: 50,
+        padding: "10px 20px", borderBottom: `1px solid ${t.borderHeader}`,
+        background: t.bgHeader, flexShrink: 0, zIndex: 50,
+        boxShadow: isDark ? "none" : "0 1px 8px rgba(0,0,0,0.06)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* Logo mark */}
-          <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <div style={{
-              width: 28, height: 28, borderRadius: 6,
-              background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: "0 0 12px rgba(37,99,235,0.4)",
-              flexShrink: 0,
-            }}>
-              <span style={{ fontSize: 14 }}>⚡</span>
-            </div>
+          <div style={{
+            width: 30, height: 30, borderRadius: 7,
+            background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 0 12px rgba(37,99,235,0.35)", flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 15 }}>⚡</span>
           </div>
-          {/* Wordmark */}
           <div style={{ display: "flex", flexDirection: "column", lineHeight: 1 }}>
             <span style={{
               fontFamily: "'Barlow Condensed', sans-serif",
-              fontSize: 28, fontWeight: 900,
-              letterSpacing: "0.06em",
-              color: "#ffffff",
-              textTransform: "uppercase",
-              lineHeight: 1,
+              fontSize: 28, fontWeight: 900, letterSpacing: "0.06em",
+              color: t.text, textTransform: "uppercase", lineHeight: 1,
             }}>
               SHARP<span style={{ color: "#2563eb" }}>LINE</span>
             </span>
-            <span style={{
-              fontSize: 8, color: "#374151", letterSpacing: "0.2em",
-              textTransform: "uppercase", fontFamily: "'Inter', sans-serif",
-              marginTop: 1,
-            }}>SHARP BETTING INTEL</span>
+            <span style={{ fontSize: 8, color: t.textFaint, letterSpacing: "0.2em", textTransform: "uppercase", fontFamily: "'Inter', sans-serif", marginTop: 1 }}>
+              SHARP BETTING INTEL
+            </span>
           </div>
           {DEMO_MODE && (
-            <span style={{
-              fontSize: 8, color: "#f59e0b", letterSpacing: "0.12em",
-              border: "1px solid #f59e0b33", padding: "1px 6px", borderRadius: 2,
-              fontFamily: "'Inter', sans-serif",
-            }}>DEMO</span>
+            <span style={{ fontSize: 8, color: "#d97706", letterSpacing: "0.12em", border: "1px solid #fcd34d", padding: "1px 6px", borderRadius: 2, fontFamily: "'Inter', sans-serif" }}>DEMO</span>
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {rlmCount > 0 && (
             <div
               onClick={() => { setView("rlm"); setSelectedGame(null); setMobileShowPanel(false); }}
               style={{
-                fontSize: 10, color: "#f59e0b", fontWeight: 700,
-                background: "#f59e0b0f", border: "1px solid #f59e0b33",
+                fontSize: 10, color: "#d97706", fontWeight: 700,
+                background: t.rlmBg, border: `1px solid ${t.rlmBorder}`,
                 padding: "4px 10px", borderRadius: 4, cursor: "pointer",
                 fontFamily: "'Inter', sans-serif", letterSpacing: "0.04em",
               }}
-            >
-              ⚡ {rlmCount} RLM signal{rlmCount > 1 ? "s" : ""}
-            </div>
+            >⚡ {rlmCount} RLM{rlmCount > 1 ? "s" : ""}</div>
           )}
+
+          {/* Light/Dark Toggle */}
+          <button
+            onClick={() => setIsDark(prev => !prev)}
+            style={{
+              background: t.bgButton, border: `1px solid ${t.border}`,
+              borderRadius: 4, padding: "5px 10px", cursor: "pointer",
+              fontSize: 13, display: "flex", alignItems: "center", gap: 4,
+              color: t.textMuted, transition: "all 0.2s",
+            }}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {isDark ? "☀️" : "🌙"}
+          </button>
+
           <button
             onClick={loadGames}
             disabled={fetching}
             style={{
-              background: "#0f172a", border: "1px solid #1f2937",
-              color: fetching ? "#374151" : "#6b7280", borderRadius: 4,
+              background: t.bgButton, border: `1px solid ${t.border}`,
+              color: fetching ? t.textFaint : t.textMuted, borderRadius: 4,
               padding: "5px 10px", fontSize: 10, cursor: fetching ? "not-allowed" : "pointer",
               display: "flex", alignItems: "center", gap: 5,
               letterSpacing: "0.08em", textTransform: "uppercase",
               fontFamily: "'Inter', sans-serif",
             }}
           >
-            {fetching ? <><Spinner /><span>Updating</span></> : "↺ Refresh"}
+            {fetching ? <><Spinner t={t} /><span>Updating</span></> : "↺ Refresh"}
           </button>
           {lastUpdated && (
-            <span style={{ fontSize: 9, color: "#1f2937", fontFamily: "'Inter', sans-serif" }}>
+            <span style={{ fontSize: 9, color: t.textFaint, fontFamily: "'Inter', sans-serif" }}>
               {lastUpdated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
             </span>
           )}
@@ -589,8 +614,8 @@ export default function SharplineApp() {
       {/* ── FILTER BAR ── */}
       <div style={{
         display: "flex", alignItems: "center", gap: 6,
-        padding: "8px 16px", borderBottom: "1px solid #0a0f1a",
-        background: "#020810", flexShrink: 0, overflowX: "auto", flexWrap: "wrap",
+        padding: "8px 16px", borderBottom: `1px solid ${t.border}`,
+        background: t.bg, flexShrink: 0, overflowX: "auto", flexWrap: "wrap",
       }}>
         <div style={{ display: "flex", gap: 4, marginRight: 6 }}>
           {[["all", "All Games"], ["rlm", `⚡ RLM (${rlmCount})`]].map(([v, label]) => (
@@ -598,84 +623,78 @@ export default function SharplineApp() {
               padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
               fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: "0.04em",
               cursor: "pointer", whiteSpace: "nowrap",
-              background: view === v ? "#1e3a5f" : "#0a1220",
-              color: view === v ? "#93c5fd" : "#374151",
+              background: view === v ? t.bgButtonActive : t.bgButton,
+              color: view === v ? (isDark ? "#93c5fd" : "#1d4ed8") : t.filterText,
+              transition: "all 0.15s",
             }}>{label}</button>
           ))}
         </div>
-        <div style={{ width: 1, height: 16, background: "#0f172a", flexShrink: 0 }} />
-        {sports.map(s => (
+        <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }} />
+        {["ALL", "NCAAB", "NBA", "NFL", "MLB"].map(s => (
           <button key={s} onClick={() => { setSportFilter(s); setSelectedGame(null); setMobileShowPanel(false); }} style={{
             padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
             fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: "0.06em",
-            cursor: "pointer", color: sportFilter === s ? "#fff" : "#374151",
-            background: sportFilter === s ? (s === "ALL" ? "#1f2937" : `${getSportColor(s)}22`) : "transparent",
-            whiteSpace: "nowrap",
+            cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.15s",
+            color: sportFilter === s ? (s === "ALL" ? t.text : getSportColor(s)) : t.filterText,
+            background: sportFilter === s ? (s === "ALL" ? t.bgButton : `${getSportColor(s)}18`) : "transparent",
           }}>{s}</button>
         ))}
       </div>
 
       {/* ── MAIN CONTENT ── */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Game list */}
         <div style={{
-          width: 340, borderRight: "1px solid #0a0f1a",
+          width: 340, borderRight: `1px solid ${t.border}`,
           overflowY: "auto", flexShrink: 0,
           display: mobileShowPanel ? "none" : "block",
+          background: t.bg,
         }}>
           <style>{`@media (min-width: 640px) { .game-list-panel { display: block !important; } }`}</style>
           {displayed.length === 0 ? (
-            <div style={{ padding: 32, textAlign: "center", color: "#1f2937", fontSize: 13, lineHeight: 1.8, fontFamily: "'Inter', sans-serif" }}>
-              {view === "rlm" ? "No RLM signals detected right now.\nCheck back as lines update." : "No games found."}
+            <div style={{ padding: 40, textAlign: "center", lineHeight: 1.8 }}>
+              <div style={{ fontSize: 36, marginBottom: 12 }}>📡</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: t.emptyText, fontFamily: "'Inter', sans-serif", marginBottom: 6 }}>
+                {view === "rlm" ? "No RLM Signals Right Now" : "No Games Found"}
+              </div>
+              <div style={{ fontSize: 12, color: t.emptySubText, fontFamily: "'Inter', sans-serif" }}>
+                {view === "rlm" ? "Check back as lines update — signals appear when sharp money moves against the public." : "Try selecting a different sport or check back later."}
+              </div>
             </div>
           ) : displayed.map(game => (
-            <GameCard
-              key={game.id}
-              game={game}
-              selected={selectedGame?.id === game.id}
-              onSelect={handleSelectGame}
-            />
+            <GameCard key={game.id} game={game} selected={selectedGame?.id === game.id} onSelect={handleSelectGame} t={t} />
           ))}
         </div>
 
-        {/* Analysis panel */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column", background: t.bg }}>
           {mobileShowPanel && (
             <button
               onClick={() => { setMobileShowPanel(false); setSelectedGame(null); }}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 14px", background: "#030c1a",
-                border: "none", borderBottom: "1px solid #0f172a",
-                color: "#6b7280", fontSize: 12, cursor: "pointer",
+                padding: "8px 14px", background: t.bgHeader,
+                border: "none", borderBottom: `1px solid ${t.borderHeader}`,
+                color: t.textMuted, fontSize: 12, cursor: "pointer",
                 fontFamily: "'Inter', sans-serif", letterSpacing: "0.04em",
               }}
             >← Back to Games</button>
           )}
           {selectedGame ? (
-            <AnalysisPanel
-              key={selectedGame.id}
-              game={selectedGame}
-              onClose={() => { setSelectedGame(null); setMobileShowPanel(false); }}
-            />
+            <AnalysisPanel key={selectedGame.id} game={selectedGame} onClose={() => { setSelectedGame(null); setMobileShowPanel(false); }} t={t} />
           ) : (
             <div style={{
               flex: 1, display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
-              gap: 12, padding: 32, textAlign: "center",
+              gap: 14, padding: 32, textAlign: "center", background: t.bg,
             }}>
-              <div style={{ fontSize: 44 }}>📡</div>
+              <div style={{ fontSize: 48 }}>📡</div>
               <div style={{
                 fontFamily: "'Barlow Condensed', sans-serif",
-                fontSize: 24, fontWeight: 900, letterSpacing: "0.1em",
-                color: "#1f2937", textTransform: "uppercase",
+                fontSize: 26, fontWeight: 900, letterSpacing: "0.1em",
+                color: t.emptyText, textTransform: "uppercase",
               }}>
                 SELECT A GAME TO ANALYZE
               </div>
-              <div style={{
-                fontSize: 13, color: "#111827", maxWidth: 300,
-                lineHeight: 1.7, fontFamily: "'Inter', sans-serif",
-              }}>
+              <div style={{ fontSize: 14, color: t.emptySubText, maxWidth: 320, lineHeight: 1.75, fontFamily: "'Inter', sans-serif" }}>
                 Tap any game to get a full AI-powered sharp analysis including line movement signals, public bias, and edge summary.
               </div>
             </div>
