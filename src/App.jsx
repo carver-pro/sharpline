@@ -479,7 +479,7 @@ export default function SharplineApp() {
   const [lastUpdated, setLastUpdated] = useState(null);
   const [fetching, setFetching] = useState(false);
   const [mobileShowPanel, setMobileShowPanel] = useState(false);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(true);  useEffect(() => {   const color = isDark ? "#030c1a" : "#ffffff";   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", color);   document.body.style.backgroundColor = isDark ? "#030c1a" : "#fdf8f0"; }, [isDark]);
 
   const t = isDark ? THEMES.dark : THEMES.light;
 
