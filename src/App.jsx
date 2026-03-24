@@ -506,7 +506,7 @@ export default function SharplineApp() {
 
   useEffect(() => { loadGames(); }, [loadGames]);
   useEffect(() => {
-    const interval = setInterval(loadGames, 300000);
+    const interval = setInterval(loadGames, 1800000);
     return () => clearInterval(interval);
   }, [loadGames]);
 
