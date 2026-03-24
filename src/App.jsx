@@ -644,7 +644,7 @@ export default function SharplineApp() {
         @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
         @keyframes slideUp { from { opacity:0; transform:translateY(20px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
         .live-pulse { animation: pulse 2s ease-in-out infinite; }
-        html, body { background-color: #030c1a; margin: 0; padding: 0; }
+        html, body { background-color: ${t.bg}; margin: 0; padding: 0; }
       `}</style>
 
       {/* ── HEADER ── */}
