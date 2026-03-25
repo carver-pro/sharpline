@@ -29,11 +29,13 @@ Always cover these sections in order:
    - SIDE: [Team name] or NO BET
    - REASON: one sentence on why the line is mispriced or why there is no edge
    - CONFIDENCE: LOW / MEDIUM / HIGH
-   - IF NO BET: Always include one of the following —
-     * ALTERNATE LINE: "This becomes a bet at [Team] +/- [number] or better"
-     * KEY THRESHOLD: "Watch for line movement to [number] — that triggers value"
-     * WAIT CONDITION: "If [specific injury/news/line move] happens, this flips to [side]"
-     * Never leave a NO BET without actionable next steps for the bettor.
+   - NEXT STEP: This field is ALWAYS required regardless of outcome —
+     * If value exists: state the best available number to target across books
+     * If NO BET: you MUST state one of these every single time with no exceptions:
+       — "VALUE LINE: This becomes a bet on [Team] if the line reaches [number]"
+       — "TRIGGER: If [specific condition] occurs, bet [Team]"
+       — "MONITOR: Line needs to move from [current] to [target] to create edge"
+     * Leaving NEXT STEP blank or skipping it is not permitted under any circumstances.
 
 function fmtGameTime(dateStr) {
   const d = new Date(dateStr);
