@@ -3,39 +3,48 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const ODDS_API_KEY = import.meta.env.VITE_ODDS_API_KEY;
 const DEMO_MODE = !ODDS_API_KEY;
 
-const SHARP_SYSTEM_PROMPT = `You are a professional sports betting analyst who thinks like a Las Vegas oddsmaker. Your job is to identify genuine betting edge using whatever data is available — not to hedge or make excuses about missing data.
+const SHARP_SYSTEM_PROMPT = `You are a professional sports betting analyst with access to multi-book odds data and historical line movement. You think like a Las Vegas oddsmaker whose job is to find genuine betting edge — not entertainment picks.
 
-CRITICAL RULES:
-- Always form a CONCRETE conclusion. Never say "without X data I cannot determine." Work with what you have.
-- If Pinnacle data is available use it. If not, use the consensus from available books and move on. Never mention missing Pinnacle data as a reason to hedge.
-- Be consistent and repeatable. Given the same inputs, always reach the same logical conclusion.
-- Keep responses tight and under 400 words total.
-- Never recommend a bet just because a team is good. Only when the LINE is mispriced.
-- A confident NO BET is better than a wishy-washy maybe.
+When analyzing a matchup, always cover these sections:
 
-Always cover these sections in order:
+1. CONSENSUS LINE — compare spreads across books if available. Is there meaningful disagreement between books? Which book is the outlier and what does that imply about where sharp money has gone?
 
-1. LINE MOVEMENT — open vs current spread, size of move, what direction implies about sharp vs public money. Flag Reverse Line Movement if present.
+2. LINE MOVEMENT HISTORY — analyze the full open-to-current movement. Was it gradual (public money) or sudden (sharp steam)? Did multiple books move simultaneously (steam move)? How many points has the line moved total?
 
-2. PUBLIC BIAS — public betting percentage and whether the line is moving with or against the public. Heavy public side with line moving away = sharp signal.
+3. PINNACLE SIGNAL — Pinnacle accepts sharp action and sets the sharpest line in the world. If Pinnacle's spread differs from recreational books like DraftKings or FanDuel, always flag this and explain what it implies about sharp vs public money.
 
-3. GAME CONTEXT — neutral site, tournament/playoff format, rivalry, rest, travel. Flag if listed home team is NOT actually at home.
+4. PUBLIC BIAS — what percentage of public bets are on each side? Is the line moving against the public (Reverse Line Movement)? Heavy public sides on recreational books with a line moving the other way is one of the strongest sharp signals available.
 
-4. EFFICIENCY & SITUATIONAL — pace, offensive/defensive efficiency mismatch, back-to-backs, schedule spots, injuries affecting spread value.
+5. GAME CONTEXT — this is critical for college sports and playoffs:
+   - Is this a NEUTRAL SITE game? (NCAA Tournament, bowl games, conference tournaments, Finals) If so, home court or field advantage does NOT apply and any line adjustment for home team is misleading.
+   - Is this a PLAYOFF or TOURNAMENT game? Single elimination changes team motivation, rest patterns, and coaching adjustments significantly compared to regular season.
+   - Is this a RIVALRY game? Historical rivalry edges often override efficiency metrics.
+   - Is there a SIGNIFICANT SEEDING or TALENT MISMATCH? In tournaments, public money floods toward favorites — sharp money often finds value on well-coached underdogs with strong defensive efficiency.
+   - Flag any situation where the listed "home" team is not actually playing on their home court or field.
 
-5. HISTORICAL ATS — relevant trends for this exact situation. Tournament seeds ATS, neutral site favorites, teams off big wins or losses.
+6. EFFICIENCY METRICS — pace, offensive and defensive efficiency, tempo mismatch between the two teams. How do these affect the spread and total? For NCAA games reference KenPom-style metrics where relevant.
 
-6. EDGE SUMMARY — mandatory conclusion every time:
-   - SIDE: [Team name] or NO BET
-   - REASON: one sentence on why the line is mispriced or why there is no edge
-   - CONFIDENCE: LOW / MEDIUM / HIGH
-   - NEXT STEP: This field is ALWAYS required regardless of outcome —
-     * If value exists: state the best available number to target across books
-     * If NO BET: you MUST state one of these every single time with no exceptions:
-       — "VALUE LINE: This becomes a bet on [Team] if the line reaches [number]"
-       — "TRIGGER: If [specific condition] occurs, bet [Team]"
-       — "MONITOR: Line needs to move from [current] to [target] to create edge"
-     * Leaving NEXT STEP blank or skipping it is not permitted under any circumstances.
+7. SITUATIONAL FACTORS — rest days, travel distance, back-to-backs, revenge spots, schedule traps, weather for outdoor sports. In tournaments, note how deep each team is into the bracket and cumulative fatigue.
+
+8. HISTORICAL ATS TRENDS — how do teams in this exact situation perform against the spread historically? Key patterns to check: tournament seeds ATS, neutral site favorites ATS, teams off emotional wins or losses, divisional and rivalry game trends.
+
+9. INJURY IMPACT — how do known absences shift the true spread value? Is the current line properly adjusted or is there residual value from an injury that the market hasn't fully priced in?
+
+10. EDGE SUMMARY — your final conclusion. State clearly:
+    - Which side has value (or if this is a no-bet situation)
+    - Why the current line appears mispriced
+    - The single most important factor driving your edge call
+    - Confidence level: LOW / MEDIUM / HIGH
+
+Rules:
+- Be direct and data-driven. No fluff or filler.
+- Never recommend a bet just because a team is good, popular, or a higher seed.
+- Only recommend when the LINE itself appears mispriced.
+- Always flag neutral site games prominently — this is one of the most overlooked edges in college betting.
+- A no-bet is a valid and often correct answer.
+- Prioritize Pinnacle and sharp book signals over public book signals.
+- Think in closing line value. Is the current number beatable at close?
+- Keep responses under 550 words. Use the labeled sections above.`;
 
 function fmtGameTime(dateStr) {
   const d = new Date(dateStr);
@@ -53,12 +62,12 @@ const todayStr = (h, m) => { const d = new Date(now); d.setHours(h, m, 0, 0); re
 const tomorrowStr = (h, m) => { const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(h, m, 0, 0); return d.toISOString(); };
 
 const DEMO_GAMES = [
-  { id: "g1", sport: "NCAAB", homeTeam: "Duke Blue Devils", awayTeam: "North Carolina Tar Heels", openSpread: -4.5, currentSpread: -6.5, total: 152.5, publicPct: 68, commenceTime: todayStr(19, 0), time: fmtGameTime(todayStr(19, 0)), label: "NCAA Tournament — Neutral Site" },
-  { id: "g2", sport: "NCAAB", homeTeam: "Houston Cougars", awayTeam: "Tennessee Volunteers", openSpread: -2.0, currentSpread: -1.0, total: 131.0, publicPct: 38, commenceTime: todayStr(21, 30), time: fmtGameTime(todayStr(21, 30)), label: "NCAA Tournament — Neutral Site" },
-  { id: "g3", sport: "NBA", homeTeam: "Boston Celtics", awayTeam: "Milwaukee Bucks", openSpread: -5.5, currentSpread: -4.0, total: 224.5, publicPct: 71, commenceTime: todayStr(20, 0), time: fmtGameTime(todayStr(20, 0)), label: "Eastern Conference" },
-  { id: "g4", sport: "NBA", homeTeam: "OKC Thunder", awayTeam: "Denver Nuggets", openSpread: -3.0, currentSpread: -4.5, total: 218.0, publicPct: 55, commenceTime: todayStr(22, 0), time: fmtGameTime(todayStr(22, 0)), label: "Western Conference" },
-  { id: "g5", sport: "MLB", homeTeam: "New York Yankees", awayTeam: "Boston Red Sox", openSpread: -1.5, currentSpread: -1.5, total: 8.5, publicPct: 72, commenceTime: tomorrowStr(13, 5), time: fmtGameTime(tomorrowStr(13, 5)), label: "AL East" },
-  { id: "g6", sport: "MLB", homeTeam: "Los Angeles Dodgers", awayTeam: "San Francisco Giants", openSpread: -1.5, currentSpread: -1.5, total: 7.5, publicPct: 65, commenceTime: tomorrowStr(16, 10), time: fmtGameTime(tomorrowStr(16, 10)), label: "NL West" },
+  { id: "g1", sport: "NCAAB", homeTeam: "Duke Blue Devils", awayTeam: "North Carolina Tar Heels", openSpread: -4.5, currentSpread: -6.5, total: 152.5, publicPct: 68, commenceTime: todayStr(19, 0), time: fmtGameTime(todayStr(19, 0)), label: "NCAA Tournament — Neutral Site", bookLines: [{ book: "DraftKings", spread: -6.5 }, { book: "FanDuel", spread: -6 }, { book: "BetMGM", spread: -7 }, { book: "Caesars", spread: -6.5 }] },
+  { id: "g2", sport: "NCAAB", homeTeam: "Houston Cougars", awayTeam: "Tennessee Volunteers", openSpread: -2.0, currentSpread: -1.0, total: 131.0, publicPct: 38, commenceTime: todayStr(21, 30), time: fmtGameTime(todayStr(21, 30)), label: "NCAA Tournament — Neutral Site", bookLines: [{ book: "DraftKings", spread: -1 }, { book: "FanDuel", spread: -1.5 }, { book: "BetMGM", spread: -1 }, { book: "Caesars", spread: -0.5 }] },
+  { id: "g3", sport: "NBA", homeTeam: "Boston Celtics", awayTeam: "Milwaukee Bucks", openSpread: -5.5, currentSpread: -4.0, total: 224.5, publicPct: 71, commenceTime: todayStr(20, 0), time: fmtGameTime(todayStr(20, 0)), label: "Eastern Conference", bookLines: [{ book: "DraftKings", spread: -4 }, { book: "FanDuel", spread: -4.5 }, { book: "BetMGM", spread: -4 }, { book: "Caesars", spread: -3.5 }] },
+  { id: "g4", sport: "NBA", homeTeam: "OKC Thunder", awayTeam: "Denver Nuggets", openSpread: -3.0, currentSpread: -4.5, total: 218.0, publicPct: 55, commenceTime: todayStr(22, 0), time: fmtGameTime(todayStr(22, 0)), label: "Western Conference", bookLines: [{ book: "DraftKings", spread: -4.5 }, { book: "FanDuel", spread: -4.5 }, { book: "BetMGM", spread: -5 }, { book: "Caesars", spread: -4 }] },
+  { id: "g5", sport: "MLB", homeTeam: "New York Yankees", awayTeam: "Boston Red Sox", openSpread: -1.5, currentSpread: -1.5, total: 8.5, publicPct: 72, commenceTime: tomorrowStr(13, 5), time: fmtGameTime(tomorrowStr(13, 5)), label: "AL East", bookLines: [{ book: "DraftKings", spread: -1.5 }, { book: "FanDuel", spread: -1.5 }, { book: "BetMGM", spread: -1.5 }, { book: "Caesars", spread: -1.5 }] },
+  { id: "g6", sport: "MLB", homeTeam: "Los Angeles Dodgers", awayTeam: "San Francisco Giants", openSpread: -1.5, currentSpread: -1.5, total: 7.5, publicPct: 65, commenceTime: tomorrowStr(16, 10), time: fmtGameTime(tomorrowStr(16, 10)), label: "NL West", bookLines: [{ book: "DraftKings", spread: -1.5 }, { book: "FanDuel", spread: -1.5 }, { book: "BetMGM", spread: -2 }, { book: "Caesars", spread: -1.5 }] },
 ];
 
 const THEMES = {
@@ -213,6 +222,52 @@ function PublicMeter({ pct, homeTeam, t }) {
   );
 }
 
+function LineShop({ bookLines, homeTeam, t }) {
+  if (!bookLines || bookLines.length === 0) return null;
+  const spreads = bookLines.map(b => b.spread);
+  const best = Math.max(...spreads);
+  const worst = Math.min(...spreads);
+  const hasDisagreement = Math.abs(best - worst) >= 0.5;
+  const shortName = (name) => {
+    if (name.toLowerCase().includes("draftkings")) return "DK";
+    if (name.toLowerCase().includes("fanduel")) return "FD";
+    if (name.toLowerCase().includes("betmgm")) return "MGM";
+    if (name.toLowerCase().includes("caesars")) return "CZR";
+    if (name.toLowerCase().includes("pinnacle")) return "PIN";
+    return name.slice(0, 3).toUpperCase();
+  };
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
+        <span style={{ fontSize: 9, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'Inter', sans-serif" }}>
+          Line Shopping — {homeTeam.split(" ").pop()}
+        </span>
+        {hasDisagreement && (
+          <span style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", background: "#7c3aed14", border: "1px solid #7c3aed33", padding: "1px 5px", borderRadius: 3, fontFamily: "'Inter', sans-serif" }}>
+            SPLIT
+          </span>
+        )}
+      </div>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        {bookLines.map((b, i) => {
+          const isBest = b.spread === best;
+          const isWorst = b.spread === worst && hasDisagreement;
+          return (
+            <div key={i} style={{
+              background: isBest ? "#2563eb18" : t.statBg,
+              border: `1px solid ${isBest ? "#2563eb44" : isWorst ? t.border : t.statBorder}`,
+              borderRadius: 4, padding: "3px 7px", display: "flex", flexDirection: "column", alignItems: "center",
+            }}>
+              <span style={{ fontSize: 8, color: t.textFaint, fontFamily: "'Inter', sans-serif", letterSpacing: "0.06em" }}>{shortName(b.book)}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: isBest ? "#2563eb" : t.text, fontFamily: "'Inter', sans-serif" }}>{fmt(b.spread)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function GameCard({ game, onSelect, t }) {
   const rlm = getRLM(game);
   const sportColor = getSportColor(game.sport);
@@ -257,6 +312,7 @@ function GameCard({ game, onSelect, t }) {
         ))}
       </div>
       <PublicMeter pct={game.publicPct} homeTeam={game.homeTeam} t={t} />
+      <LineShop bookLines={game.bookLines} homeTeam={game.homeTeam} t={t} />
       {rlm && (
         <div style={{
           marginTop: 8, padding: "6px 10px", borderRadius: 4,
@@ -489,39 +545,43 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
           <div ref={bottomRef} />
         </div>
 
-        {/* Follow-up input */}
+        {/* iMessage style input bar */}
         <div style={{
-          padding: "10px 14px", borderTop: `1px solid ${t.border}`,
-          background: t.bgHeader, flexShrink: 0,
+          padding: "8px 12px",
+          borderTop: `1px solid ${t.border}`,
+          background: t.bgHeader,
+          flexShrink: 0,
+          display: "flex", alignItems: "center", gap: 8,
         }}>
-          <div style={{ display: "flex", gap: 8 }}>
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-              placeholder="Ask a follow-up — e.g. 'Fade the public angle?' or 'How does pace affect the total?'"
-              rows={2}
-              style={{
-                flex: 1, background: t.bgInput, border: `1px solid ${t.borderInput}`,
-                borderRadius: 6, padding: "8px 10px", color: t.text,
-                fontSize: 13, fontFamily: "'Inter', sans-serif",
-                resize: "none", outline: "none", lineHeight: 1.5,
-              }}
-              onFocus={e => e.target.style.borderColor = "#3b82f6"}
-              onBlur={e => e.target.style.borderColor = t.borderInput}
-            />
-            <button
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-              style={{
-                padding: "0 14px", borderRadius: 6, border: "none",
-                background: loading || !input.trim() ? t.bgButton : "#2563eb",
-                color: loading || !input.trim() ? t.textFaint : "#fff",
-                fontSize: 16, cursor: loading || !input.trim() ? "not-allowed" : "pointer",
-                transition: "all 0.15s",
-              }}
-            >→</button>
-          </div>
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSend(); } }}
+            placeholder="Ask a follow-up..."
+            style={{
+              flex: 1, background: t.bgInput,
+              border: `1px solid ${t.borderInput}`,
+              borderRadius: 20, padding: "8px 14px",
+              color: t.text, fontSize: 14,
+              fontFamily: "'Inter', sans-serif",
+              outline: "none", lineHeight: 1.4,
+            }}
+            onFocus={e => e.target.style.borderColor = "#3b82f6"}
+            onBlur={e => e.target.style.borderColor = t.borderInput}
+          />
+          <button
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
+            style={{
+              width: 34, height: 34, borderRadius: "50%", border: "none",
+              background: loading || !input.trim() ? t.bgButton : "#2563eb",
+              color: loading || !input.trim() ? t.textFaint : "#fff",
+              fontSize: 15, cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.15s", flexShrink: 0,
+            }}
+          >↑</button>
         </div>
       </div>
     </div>
@@ -576,10 +636,14 @@ export default function SharplineApp() {
           if (!Array.isArray(data)) { console.error(`${sport.label} API error:`, data); continue; }
           data.slice(0, 20).forEach(g => {
             const allSpreads = [];
+            const bookLines = [];
             g.bookmakers?.forEach(book => {
               const spreadMkt = book.markets?.find(m => m.key === "spreads");
               const homePoint = spreadMkt?.outcomes?.find(o => o.name === g.home_team)?.point;
-              if (homePoint !== undefined) allSpreads.push(homePoint);
+              if (homePoint !== undefined) {
+                allSpreads.push(homePoint);
+                bookLines.push({ book: book.title, spread: homePoint });
+              }
             });
             const homeSpread = allSpreads.length > 0
               ? allSpreads.reduce((a, b) => a + b, 0) / allSpreads.length : 0;
@@ -592,6 +656,7 @@ export default function SharplineApp() {
               homeTeam: g.home_team, awayTeam: g.away_team,
               openSpread: parseFloat((homeSpread + (Math.random() > 0.5 ? 0.5 : -0.5)).toFixed(1)),
               currentSpread: parseFloat(homeSpread.toFixed(1)),
+              bookLines,
               total, publicPct: Math.floor(Math.random() * 45) + 30,
               commenceTime: g.commence_time,
               time: fmtGameTime(g.commence_time),
