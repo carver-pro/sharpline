@@ -546,12 +546,48 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
         </div>
 
         {/* iMessage style input bar */}
-        <div style={{
-          padding: "8px 12px",
-          borderTop: `1px solid ${t.border}`,
-          background: t.bgHeader,
-          flexShrink: 0,
-          display: "flex", alignItems: "center", gap: 8,
+<div style={{
+  padding: "8px 12px",
+  borderTop: `1px solid ${t.border}`,
+  background: t.bgHeader,
+  flexShrink: 0,
+  display: "flex", alignItems: "center", gap: 8,
+  position: "sticky",
+  bottom: 0,
+  zIndex: 10,
+}}>
+  <input
+    type="text"
+    value={input}
+    onChange={e => setInput(e.target.value)}
+    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSend(); } }}
+    placeholder="Ask a follow-up..."
+    style={{
+      flex: 1, background: t.bgInput,
+      border: `1px solid ${t.borderInput}`,
+      borderRadius: 20, padding: "8px 14px",
+      color: t.text, fontSize: 14,
+      fontFamily: "'Inter', sans-serif",
+      outline: "none", lineHeight: 1.4,
+      minWidth: 0,
+      maxWidth: "calc(100% - 46px)",
+    }}
+    onFocus={e => e.target.style.borderColor = "#3b82f6"}
+    onBlur={e => e.target.style.borderColor = t.borderInput}
+  />
+  <button
+    onClick={handleSend}
+    disabled={loading || !input.trim()}
+    style={{
+      width: 34, height: 34, borderRadius: "50%", border: "none",
+      background: loading || !input.trim() ? t.bgButton : "#2563eb",
+      color: loading || !input.trim() ? t.textFaint : "#fff",
+      fontSize: 15, cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      transition: "all 0.15s", flexShrink: 0,
+    }}
+  >↑</button>
+</div>
         }}>
           <input
             type="text"
