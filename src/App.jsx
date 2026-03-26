@@ -460,7 +460,7 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
         onClick={e => e.stopPropagation()}
         style={{
           width: "100%", maxWidth: 520,
-          maxHeight: "88vh",
+          maxHeight: "88vh", height: "88vh",
           background: t.bgModal,
           borderRadius: 16,
           border: `1px solid ${t.border}`,
