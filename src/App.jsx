@@ -3,48 +3,36 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const ODDS_API_KEY = import.meta.env.VITE_ODDS_API_KEY;
 const DEMO_MODE = !ODDS_API_KEY;
 
-const SHARP_SYSTEM_PROMPT = `You are a professional sports betting analyst with access to multi-book odds data and historical line movement. You think like a Las Vegas oddsmaker whose job is to find genuine betting edge — not entertainment picks.
+const SHARP_SYSTEM_PROMPT = `You are a sharp sports betting analyst. You always form a complete, concrete analysis using only the data provided. You never mention missing data, never ask for more information, and never hedge because a data source is unavailable.
 
-When analyzing a matchup, always cover these sections:
+ABSOLUTE RULES — NO EXCEPTIONS:
+1. Never mention Pinnacle, missing books, or unavailable data sources. Ever.
+2. Always reach a concrete conclusion. Vague answers are not permitted.
+3. Every response must end with a complete EDGE SUMMARY — no skipping it.
+4. If the answer is NO BET you must still provide a VALUE LINE. Always.
+5. Keep total response under 350 words.
 
-1. CONSENSUS LINE — compare spreads across books if available. Is there meaningful disagreement between books? Which book is the outlier and what does that imply about where sharp money has gone?
+FORMAT — use exactly these sections every time:
 
-2. LINE MOVEMENT HISTORY — analyze the full open-to-current movement. Was it gradual (public money) or sudden (sharp steam)? Did multiple books move simultaneously (steam move)? How many points has the line moved total?
+LINE MOVEMENT
+State the open line, current line, total move in points, and what the direction implies. Is the public on one side while the line moves the other way? That is a sharp signal — say so directly.
 
-3. PINNACLE SIGNAL — Pinnacle accepts sharp action and sets the sharpest line in the world. If Pinnacle's spread differs from recreational books like DraftKings or FanDuel, always flag this and explain what it implies about sharp vs public money.
+PUBLIC BIAS
+State the public betting percentage. Is it above 65%? Flag it as heavy public. Is the line moving against the heavy public side? That is Reverse Line Movement — name it explicitly.
 
-4. PUBLIC BIAS — what percentage of public bets are on each side? Is the line moving against the public (Reverse Line Movement)? Heavy public sides on recreational books with a line moving the other way is one of the strongest sharp signals available.
+GAME CONTEXT
+Is this a neutral site? Say so and remove home court from the equation. Is this a tournament or playoff game? Note motivation and fatigue factors. Is there a key injury? State how it affects the spread.
 
-5. GAME CONTEXT — this is critical for college sports and playoffs:
-   - Is this a NEUTRAL SITE game? (NCAA Tournament, bowl games, conference tournaments, Finals) If so, home court or field advantage does NOT apply and any line adjustment for home team is misleading.
-   - Is this a PLAYOFF or TOURNAMENT game? Single elimination changes team motivation, rest patterns, and coaching adjustments significantly compared to regular season.
-   - Is this a RIVALRY game? Historical rivalry edges often override efficiency metrics.
-   - Is there a SIGNIFICANT SEEDING or TALENT MISMATCH? In tournaments, public money floods toward favorites — sharp money often finds value on well-coached underdogs with strong defensive efficiency.
-   - Flag any situation where the listed "home" team is not actually playing on their home court or field.
+SHARP LEAN
+Based on line movement and public bias combined, which side does the data point toward? State it as a direction — not a pick, just what the numbers suggest.
 
-6. EFFICIENCY METRICS — pace, offensive and defensive efficiency, tempo mismatch between the two teams. How do these affect the spread and total? For NCAA games reference KenPom-style metrics where relevant.
+EDGE SUMMARY
+This section is mandatory and must contain all four of these lines with no exceptions:
 
-7. SITUATIONAL FACTORS — rest days, travel distance, back-to-backs, revenge spots, schedule traps, weather for outdoor sports. In tournaments, note how deep each team is into the bracket and cumulative fatigue.
-
-8. HISTORICAL ATS TRENDS — how do teams in this exact situation perform against the spread historically? Key patterns to check: tournament seeds ATS, neutral site favorites ATS, teams off emotional wins or losses, divisional and rivalry game trends.
-
-9. INJURY IMPACT — how do known absences shift the true spread value? Is the current line properly adjusted or is there residual value from an injury that the market hasn't fully priced in?
-
-10. EDGE SUMMARY — your final conclusion. State clearly:
-    - Which side has value (or if this is a no-bet situation)
-    - Why the current line appears mispriced
-    - The single most important factor driving your edge call
-    - Confidence level: LOW / MEDIUM / HIGH
-
-Rules:
-- Be direct and data-driven. No fluff or filler.
-- Never recommend a bet just because a team is good, popular, or a higher seed.
-- Only recommend when the LINE itself appears mispriced.
-- Always flag neutral site games prominently — this is one of the most overlooked edges in college betting.
-- A no-bet is a valid and often correct answer.
-- Prioritize Pinnacle and sharp book signals over public book signals.
-- Think in closing line value. Is the current number beatable at close?
-- Keep responses under 550 words. Use the labeled sections above.`;
+SIDE: [Team Name] OR NO BET
+REASON: [One sentence — why the line is or is not mispriced]
+CONFIDENCE: LOW / MEDIUM / HIGH
+VALUE LINE: [Required even on NO BET — example: "Bet [Team] if line reaches [number]" or "Current line has value if it moves to [number] or better" or "No edge unless line shifts by at least [X] points"]`;
 
 function fmtGameTime(dateStr) {
   const d = new Date(dateStr);
@@ -331,7 +319,7 @@ function FormattedAnalysis({ content, t }) {
       {lines.map((line, i) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} style={{ height: 8 }} />;
-        const isHeader = /^(\d+\.|[A-Z\s]{4,})\s*[—-]/.test(trimmed) || /^[A-Z\s]{6,}:/.test(trimmed);
+        const isHeader = /^(LINE MOVEMENT|PUBLIC BIAS|GAME CONTEXT|SHARP LEAN|EDGE SUMMARY)/i.test(trimmed);
         if (isHeader) {
           return (
             <div key={i} style={{
@@ -342,23 +330,18 @@ function FormattedAnalysis({ content, t }) {
             }}>{trimmed}</div>
           );
         }
-        const isEdge = trimmed.toLowerCase().includes("edge summary") || trimmed.toLowerCase().includes("recommendation");
-        if (isEdge) {
+        const isEdgeLine = /^(SIDE:|REASON:|CONFIDENCE:|VALUE LINE:)/i.test(trimmed);
+        if (isEdgeLine) {
+          const isValueLine = /^VALUE LINE:/i.test(trimmed);
+          const isSide = /^SIDE:/i.test(trimmed);
           return (
             <div key={i} style={{
-              fontSize: 13, fontWeight: 700, color: "#d97706",
-              marginTop: 14, marginBottom: 5, padding: "8px 12px",
-              background: t.rlmBg, border: `1px solid ${t.rlmBorder}`, borderRadius: 6,
-            }}>{trimmed}</div>
-          );
-        }
-        const isNeutralAlert = trimmed.toLowerCase().includes("neutral site") || trimmed.toLowerCase().includes("neutral court");
-        if (isNeutralAlert) {
-          return (
-            <div key={i} style={{
-              fontSize: 12, fontWeight: 600, color: "#7c3aed",
-              marginTop: 6, marginBottom: 4, padding: "5px 10px",
-              background: "#7c3aed0d", border: "1px solid #7c3aed22", borderRadius: 5,
+              fontSize: 13, fontWeight: 700,
+              color: isValueLine ? "#2563eb" : isSide ? "#d97706" : t.text,
+              marginBottom: 4, padding: "5px 10px",
+              background: isValueLine ? "#2563eb0d" : isSide ? t.rlmBg : t.bgAnalysis,
+              border: `1px solid ${isValueLine ? "#2563eb22" : isSide ? t.rlmBorder : t.border}`,
+              borderRadius: 5,
             }}>{trimmed}</div>
           );
         }
@@ -383,7 +366,6 @@ function FormattedAnalysis({ content, t }) {
   );
 }
 
-// ── MODAL COMPONENT ──
 function AnalysisModal({ game, onClose, t }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -404,6 +386,7 @@ LINE MOVE: ${fmt(g.currentSpread - g.openSpread)} pts
 TOTAL: ${g.total}
 PUBLIC BETTING: ${g.publicPct}% on ${g.homeTeam}
 RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` : "No"}
+BOOK LINES: ${g.bookLines ? g.bookLines.map(b => `${b.book} ${fmt(b.spread)}`).join(", ") : "Not available"}
 `.trim(), []);
 
   const sendMessage = useCallback(async (userText, history) => {
@@ -444,7 +427,6 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
   const sportColor = getSportColor(game.sport);
 
   return (
-    // Overlay — tap outside to close
     <div
       onClick={onClose}
       style={{
@@ -455,7 +437,6 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
         animation: "fadeIn 0.2s ease",
       }}
     >
-      {/* Modal box — stop click from bubbling to overlay */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
@@ -499,8 +480,6 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
               }}
             >✕</button>
           </div>
-
-          {/* Quick stats */}
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {[
               { label: "Open", val: fmt(game.openSpread) },
@@ -509,10 +488,7 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
               { label: "Total", val: game.total },
               { label: "Public", val: `${game.publicPct}%`, color: game.publicPct > 65 ? "#ef4444" : t.textMuted },
             ].map(s => (
-              <div key={s.label} style={{
-                background: t.statBg, border: `1px solid ${t.statBorder}`,
-                borderRadius: 4, padding: "3px 8px",
-              }}>
+              <div key={s.label} style={{ background: t.statBg, border: `1px solid ${t.statBorder}`, borderRadius: 4, padding: "3px 8px" }}>
                 <span style={{ fontSize: 8, color: t.textFaint, marginRight: 4, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'Inter', sans-serif" }}>{s.label}</span>
                 <span style={{ fontSize: 11, fontWeight: 700, color: s.color || t.text, fontFamily: "'Inter', sans-serif" }}>{s.val}</span>
               </div>
@@ -520,7 +496,7 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
           </div>
         </div>
 
-        {/* Scrollable analysis content */}
+        {/* Scrollable analysis */}
         <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", background: t.bg }}>
           {messages.length === 0 && !loading && (
             <div style={{ textAlign: "center", color: t.textMuted, marginTop: 30 }}>
@@ -546,48 +522,13 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
         </div>
 
         {/* iMessage style input bar */}
-<div style={{
-  padding: "8px 12px",
-  borderTop: `1px solid ${t.border}`,
-  background: t.bgHeader,
-  flexShrink: 0,
-  display: "flex", alignItems: "center", gap: 8,
-  position: "sticky",
-  bottom: 0,
-  zIndex: 10,
-}}>
-  <input
-    type="text"
-    value={input}
-    onChange={e => setInput(e.target.value)}
-    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSend(); } }}
-    placeholder="Ask a follow-up..."
-    style={{
-      flex: 1, background: t.bgInput,
-      border: `1px solid ${t.borderInput}`,
-      borderRadius: 20, padding: "8px 14px",
-      color: t.text, fontSize: 14,
-      fontFamily: "'Inter', sans-serif",
-      outline: "none", lineHeight: 1.4,
-      minWidth: 0,
-      maxWidth: "calc(100% - 46px)",
-    }}
-    onFocus={e => e.target.style.borderColor = "#3b82f6"}
-    onBlur={e => e.target.style.borderColor = t.borderInput}
-  />
-  <button
-    onClick={handleSend}
-    disabled={loading || !input.trim()}
-    style={{
-      width: 34, height: 34, borderRadius: "50%", border: "none",
-      background: loading || !input.trim() ? t.bgButton : "#2563eb",
-      color: loading || !input.trim() ? t.textFaint : "#fff",
-      fontSize: 15, cursor: loading || !input.trim() ? "not-allowed" : "pointer",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      transition: "all 0.15s", flexShrink: 0,
-    }}
-  >↑</button>
-</div>
+        <div style={{
+          padding: "8px 12px",
+          borderTop: `1px solid ${t.border}`,
+          background: t.bgHeader,
+          flexShrink: 0,
+          display: "flex", alignItems: "center", gap: 8,
+          position: "sticky", bottom: 0, zIndex: 10,
         }}>
           <input
             type="text"
@@ -602,6 +543,8 @@ RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` 
               color: t.text, fontSize: 14,
               fontFamily: "'Inter', sans-serif",
               outline: "none", lineHeight: 1.4,
+              minWidth: 0,
+              maxWidth: "calc(100% - 46px)",
             }}
             onFocus={e => e.target.style.borderColor = "#3b82f6"}
             onBlur={e => e.target.style.borderColor = t.borderInput}
@@ -741,7 +684,7 @@ export default function SharplineApp() {
         html, body { background-color: #fdf8f0; margin: 0; padding: 0; }
       `}</style>
 
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <header style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "10px 20px", borderBottom: `1px solid ${t.borderHeader}`,
@@ -811,7 +754,7 @@ export default function SharplineApp() {
         </div>
       </header>
 
-      {/* ── FILTER BAR ── */}
+      {/* FILTER BAR */}
       <div style={{
         display: "flex", alignItems: "center", gap: 6,
         padding: "8px 16px", borderBottom: `1px solid ${t.border}`,
@@ -840,7 +783,7 @@ export default function SharplineApp() {
         ))}
       </div>
 
-      {/* ── GAME LIST (full width, always visible) ── */}
+      {/* GAME LIST */}
       <div style={{ flex: 1, overflowY: "auto", background: t.bg }}>
         {displayed.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", lineHeight: 1.8 }}>
@@ -853,16 +796,11 @@ export default function SharplineApp() {
             </div>
           </div>
         ) : displayed.map(game => (
-          <GameCard
-            key={game.id}
-            game={game}
-            onSelect={setSelectedGame}
-            t={t}
-          />
+          <GameCard key={game.id} game={game} onSelect={setSelectedGame} t={t} />
         ))}
       </div>
 
-      {/* ── MODAL (rendered over everything when a game is selected) ── */}
+      {/* ANALYSIS MODAL */}
       {selectedGame && (
         <AnalysisModal
           key={selectedGame.id}
