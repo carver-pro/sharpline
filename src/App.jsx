@@ -62,6 +62,29 @@ VALUE LINE: [Specific number or condition that creates edge]
 
 Repeat for #2 through #5. After all 5 picks add a one-line DAILY SUMMARY of what the overall market looks like today.`;
 
+const TODAY_ANALYSIS_PROMPT = `You are a sharp sports betting analyst writing a morning market briefing for a group of informed bettors. You have received today's full slate of games across multiple sports.
+
+Your job is to write a sport-by-sport breakdown of what the market looks like today. This is NOT a picks sheet — it is a narrative analysis of where sharp money appears to be, which games have the most interesting signals, and what the overall market tone is for each sport today.
+
+ABSOLUTE RULES:
+1. Never mention Pinnacle or missing data sources.
+2. Write in a direct, confident tone — like a sharp handicapper's morning notes.
+3. Organize by sport — one section per sport present in today's slate.
+4. For each sport, identify: the most interesting line movement, the biggest public fade opportunity, and the game with the most edge potential.
+5. End with a MARKET OUTLOOK — one paragraph on the overall tone of today's slate.
+6. Keep the entire response under 500 words.
+7. Never hedge. Always have a perspective.
+
+FORMAT:
+
+[SPORT NAME]
+[2-3 sentences covering the most notable signal games in this sport today, what lines have moved meaningfully, where public money is concentrated, and which game deserves the most attention]
+
+Repeat for each sport, then:
+
+MARKET OUTLOOK
+[One paragraph — what kind of day is this? Sharp action day, public heavy day, neutral day? Where is the best overall value sitting?]`;
+
 function fmtGameTime(dateStr) {
   const d = new Date(dateStr);
   const today = new Date();
@@ -78,12 +101,12 @@ const todayStr = (h, m) => { const d = new Date(now); d.setHours(h, m, 0, 0); re
 const tomorrowStr = (h, m) => { const d = new Date(now); d.setDate(d.getDate() + 1); d.setHours(h, m, 0, 0); return d.toISOString(); };
 
 const DEMO_GAMES = [
-  { id: "g1", sport: "NCAAB", homeTeam: "Duke Blue Devils", awayTeam: "North Carolina Tar Heels", openSpread: -4.5, currentSpread: -6.5, total: 152.5, publicPct: 68, commenceTime: todayStr(19, 0), time: fmtGameTime(todayStr(19, 0)), label: "NCAA Tournament — Neutral Site", bookLines: [{ book: "DraftKings", spread: -6.5 }, { book: "FanDuel", spread: -6 }, { book: "BetMGM", spread: -7 }, { book: "Caesars", spread: -6.5 }] },
-  { id: "g2", sport: "NCAAB", homeTeam: "Houston Cougars", awayTeam: "Tennessee Volunteers", openSpread: -2.0, currentSpread: -1.0, total: 131.0, publicPct: 38, commenceTime: todayStr(21, 30), time: fmtGameTime(todayStr(21, 30)), label: "NCAA Tournament — Neutral Site", bookLines: [{ book: "DraftKings", spread: -1 }, { book: "FanDuel", spread: -1.5 }, { book: "BetMGM", spread: -1 }, { book: "Caesars", spread: -0.5 }] },
-  { id: "g3", sport: "NBA", homeTeam: "Boston Celtics", awayTeam: "Milwaukee Bucks", openSpread: -5.5, currentSpread: -4.0, total: 224.5, publicPct: 71, commenceTime: todayStr(20, 0), time: fmtGameTime(todayStr(20, 0)), label: "Eastern Conference", bookLines: [{ book: "DraftKings", spread: -4 }, { book: "FanDuel", spread: -4.5 }, { book: "BetMGM", spread: -4 }, { book: "Caesars", spread: -3.5 }] },
-  { id: "g4", sport: "NBA", homeTeam: "OKC Thunder", awayTeam: "Denver Nuggets", openSpread: -3.0, currentSpread: -4.5, total: 218.0, publicPct: 55, commenceTime: todayStr(22, 0), time: fmtGameTime(todayStr(22, 0)), label: "Western Conference", bookLines: [{ book: "DraftKings", spread: -4.5 }, { book: "FanDuel", spread: -4.5 }, { book: "BetMGM", spread: -5 }, { book: "Caesars", spread: -4 }] },
-  { id: "g5", sport: "MLB", homeTeam: "New York Yankees", awayTeam: "Boston Red Sox", openSpread: -1.5, currentSpread: -1.5, total: 8.5, publicPct: 72, commenceTime: tomorrowStr(13, 5), time: fmtGameTime(tomorrowStr(13, 5)), label: "AL East", bookLines: [{ book: "DraftKings", spread: -1.5 }, { book: "FanDuel", spread: -1.5 }, { book: "BetMGM", spread: -1.5 }, { book: "Caesars", spread: -1.5 }] },
-  { id: "g6", sport: "MLB", homeTeam: "Los Angeles Dodgers", awayTeam: "San Francisco Giants", openSpread: -1.5, currentSpread: -1.5, total: 7.5, publicPct: 65, commenceTime: tomorrowStr(16, 10), time: fmtGameTime(tomorrowStr(16, 10)), label: "NL West", bookLines: [{ book: "DraftKings", spread: -1.5 }, { book: "FanDuel", spread: -1.5 }, { book: "BetMGM", spread: -2 }, { book: "Caesars", spread: -1.5 }] },
+  { id: "g1", sport: "NCAAB", homeTeam: "Duke Blue Devils", awayTeam: "North Carolina Tar Heels", openSpread: -4.5, currentSpread: -6.5, total: 152.5, publicPct: 68, commenceTime: todayStr(19, 0), time: fmtGameTime(todayStr(19, 0)), label: "NCAA Tournament — Neutral Site", bookLines: [{ book: "DraftKings", spread: -6.5, juice: -110 }, { book: "FanDuel", spread: -6, juice: -115 }, { book: "BetMGM", spread: -7, juice: -110 }, { book: "Caesars", spread: -6.5, juice: -105 }] },
+  { id: "g2", sport: "NCAAB", homeTeam: "Houston Cougars", awayTeam: "Tennessee Volunteers", openSpread: -2.0, currentSpread: -1.0, total: 131.0, publicPct: 38, commenceTime: todayStr(21, 30), time: fmtGameTime(todayStr(21, 30)), label: "NCAA Tournament — Neutral Site", bookLines: [{ book: "DraftKings", spread: -1, juice: -110 }, { book: "FanDuel", spread: -1.5, juice: -110 }, { book: "BetMGM", spread: -1, juice: -115 }, { book: "Caesars", spread: -0.5, juice: -120 }] },
+  { id: "g3", sport: "NBA", homeTeam: "Boston Celtics", awayTeam: "Milwaukee Bucks", openSpread: -5.5, currentSpread: -4.0, total: 224.5, publicPct: 71, commenceTime: todayStr(20, 0), time: fmtGameTime(todayStr(20, 0)), label: "Eastern Conference", bookLines: [{ book: "DraftKings", spread: -4, juice: -110 }, { book: "FanDuel", spread: -4.5, juice: -108 }, { book: "BetMGM", spread: -4, juice: -115 }, { book: "Caesars", spread: -3.5, juice: -120 }] },
+  { id: "g4", sport: "NBA", homeTeam: "OKC Thunder", awayTeam: "Denver Nuggets", openSpread: -3.0, currentSpread: -4.5, total: 218.0, publicPct: 55, commenceTime: todayStr(22, 0), time: fmtGameTime(todayStr(22, 0)), label: "Western Conference", bookLines: [{ book: "DraftKings", spread: -4.5, juice: -110 }, { book: "FanDuel", spread: -4.5, juice: -112 }, { book: "BetMGM", spread: -5, juice: -105 }, { book: "Caesars", spread: -4, juice: -115 }] },
+  { id: "g5", sport: "MLB", homeTeam: "New York Yankees", awayTeam: "Boston Red Sox", openSpread: -1.5, currentSpread: -1.5, total: 8.5, publicPct: 72, commenceTime: tomorrowStr(13, 5), time: fmtGameTime(tomorrowStr(13, 5)), label: "AL East", bookLines: [{ book: "DraftKings", spread: -1.5, juice: -130 }, { book: "FanDuel", spread: -1.5, juice: -125 }, { book: "BetMGM", spread: -1.5, juice: -130 }, { book: "Caesars", spread: -1.5, juice: -120 }] },
+  { id: "g6", sport: "MLB", homeTeam: "Los Angeles Dodgers", awayTeam: "San Francisco Giants", openSpread: -1.5, currentSpread: -1.5, total: 7.5, publicPct: 65, commenceTime: tomorrowStr(16, 10), time: fmtGameTime(tomorrowStr(16, 10)), label: "NL West", bookLines: [{ book: "DraftKings", spread: -1.5, juice: -120 }, { book: "FanDuel", spread: -1.5, juice: -118 }, { book: "BetMGM", spread: -2, juice: -110 }, { book: "Caesars", spread: -1.5, juice: -125 }] },
 ];
 
 const THEMES = {
@@ -124,6 +147,11 @@ function fmt(n) {
   return v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1);
 }
 
+function fmtJuice(n) {
+  if (!n && n !== 0) return "";
+  return n > 0 ? `+${n}` : `${n}`;
+}
+
 function getRLM(game) {
   const move = game.currentSpread - game.openSpread;
   const publicFavorsHome = game.publicPct > 55;
@@ -135,7 +163,7 @@ function getSharpSide(game) {
 }
 
 function getSportColor(sport) {
-  return sport === "NBA" ? "#f97316" : sport === "NCAAB" ? "#3b82f6" : sport === "MLB" ? "#10b981" : "#a855f7";
+  return sport === "NBA" ? "#f97316" : sport === "NCAAB" ? "#3b82f6" : sport === "MLB" ? "#10b981" : sport === "NHL" ? "#06b6d4" : "#a855f7";
 }
 
 function isNeutralSite(game) {
@@ -186,7 +214,6 @@ function ContextBadge({ game }) {
           fontSize: 9, fontWeight: 700, color: "#7c3aed",
           background: "#7c3aed14", border: "1px solid #7c3aed33",
           padding: "2px 6px", borderRadius: 3, fontFamily: "'Inter', sans-serif",
-          letterSpacing: "0.06em",
         }}>🏟 NEUTRAL SITE</span>
       )}
       {playoff && (
@@ -194,7 +221,6 @@ function ContextBadge({ game }) {
           fontSize: 9, fontWeight: 700, color: "#db2777",
           background: "#db277714", border: "1px solid #db277733",
           padding: "2px 6px", borderRadius: 3, fontFamily: "'Inter', sans-serif",
-          letterSpacing: "0.06em",
         }}>🏆 TOURNAMENT</span>
       )}
     </div>
@@ -243,7 +269,13 @@ function LineShop({ bookLines, homeTeam, t }) {
   const spreads = bookLines.map(b => b.spread);
   const best = Math.max(...spreads);
   const worst = Math.min(...spreads);
-  const hasDisagreement = Math.abs(best - worst) >= 0.5;
+  const hasSpreadDisagreement = Math.abs(best - worst) >= 0.5;
+
+  // Best juice = least negative (e.g. -105 is better than -120)
+  const juices = bookLines.map(b => b.juice).filter(j => j !== undefined && j !== null);
+  const bestJuice = juices.length > 0 ? Math.max(...juices) : null;
+  const hasJuiceDisagreement = juices.length > 1 && (Math.max(...juices) - Math.min(...juices)) >= 5;
+
   const shortName = (name) => {
     if (name.toLowerCase().includes("draftkings")) return "DK";
     if (name.toLowerCase().includes("fanduel")) return "FD";
@@ -252,34 +284,68 @@ function LineShop({ bookLines, homeTeam, t }) {
     if (name.toLowerCase().includes("pinnacle")) return "PIN";
     return name.slice(0, 3).toUpperCase();
   };
+
   return (
     <div style={{ marginTop: 10 }}>
+      {/* Header row */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
         <span style={{ fontSize: 9, color: t.textFaint, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'Inter', sans-serif" }}>
           Line Shopping — {homeTeam.split(" ").pop()}
         </span>
-        {hasDisagreement && (
-          <span style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", background: "#7c3aed14", border: "1px solid #7c3aed33", padding: "1px 5px", borderRadius: 3, fontFamily: "'Inter', sans-serif" }}>
-            SPLIT
-          </span>
-        )}
+        <div style={{ display: "flex", gap: 4 }}>
+          {hasSpreadDisagreement && (
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#7c3aed", background: "#7c3aed14", border: "1px solid #7c3aed33", padding: "1px 5px", borderRadius: 3, fontFamily: "'Inter', sans-serif" }}>
+              SPLIT
+            </span>
+          )}
+          {hasJuiceDisagreement && (
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#10b981", background: "#10b98114", border: "1px solid #10b98133", padding: "1px 5px", borderRadius: 3, fontFamily: "'Inter', sans-serif" }}>
+              JUICE GAP
+            </span>
+          )}
+        </div>
       </div>
-      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+
+      {/* Spread row */}
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 4 }}>
         {bookLines.map((b, i) => {
-          const isBest = b.spread === best;
-          const isWorst = b.spread === worst && hasDisagreement;
+          const isBestSpread = b.spread === best;
           return (
             <div key={i} style={{
-              background: isBest ? "#2563eb18" : t.statBg,
-              border: `1px solid ${isBest ? "#2563eb44" : isWorst ? t.border : t.statBorder}`,
-              borderRadius: 4, padding: "3px 7px", display: "flex", flexDirection: "column", alignItems: "center",
+              background: isBestSpread ? "#2563eb18" : t.statBg,
+              border: `1px solid ${isBestSpread ? "#2563eb44" : t.statBorder}`,
+              borderRadius: 4, padding: "3px 7px",
+              display: "flex", flexDirection: "column", alignItems: "center", minWidth: 42,
             }}>
               <span style={{ fontSize: 8, color: t.textFaint, fontFamily: "'Inter', sans-serif", letterSpacing: "0.06em" }}>{shortName(b.book)}</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: isBest ? "#2563eb" : t.text, fontFamily: "'Inter', sans-serif" }}>{fmt(b.spread)}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: isBestSpread ? "#2563eb" : t.text, fontFamily: "'Inter', sans-serif" }}>{fmt(b.spread)}</span>
             </div>
           );
         })}
       </div>
+
+      {/* Juice row */}
+      {juices.length > 0 && (
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {bookLines.map((b, i) => {
+            if (b.juice === undefined || b.juice === null) return null;
+            const isBestJuice = b.juice === bestJuice;
+            return (
+              <div key={i} style={{
+                background: isBestJuice && hasJuiceDisagreement ? "#10b98112" : t.statBg,
+                border: `1px solid ${isBestJuice && hasJuiceDisagreement ? "#10b98133" : t.statBorder}`,
+                borderRadius: 4, padding: "2px 7px",
+                display: "flex", flexDirection: "column", alignItems: "center", minWidth: 42,
+              }}>
+                <span style={{ fontSize: 8, color: t.textFaint, fontFamily: "'Inter', sans-serif", letterSpacing: "0.04em" }}>juice</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: isBestJuice && hasJuiceDisagreement ? "#10b981" : t.textMuted, fontFamily: "'Inter', sans-serif" }}>
+                  {fmtJuice(b.juice)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -394,7 +460,6 @@ function FormattedAnalysis({ content, t }) {
   );
 }
 
-// ── BEST BETS FORMATTED OUTPUT ──
 function FormattedBestBets({ content, t }) {
   const lines = content.split("\n");
   return (
@@ -402,10 +467,7 @@ function FormattedBestBets({ content, t }) {
       {lines.map((line, i) => {
         const trimmed = line.trim();
         if (!trimmed) return <div key={i} style={{ height: 6 }} />;
-
-        // Pick headers like "#1 —"
-        const isPickHeader = /^#\d/.test(trimmed);
-        if (isPickHeader) {
+        if (/^#\d/.test(trimmed)) {
           return (
             <div key={i} style={{
               fontSize: 13, fontWeight: 800, color: t.text,
@@ -417,8 +479,6 @@ function FormattedBestBets({ content, t }) {
             }}>{trimmed}</div>
           );
         }
-
-        // SIDE line
         if (/^SIDE:/i.test(trimmed)) {
           const isNoBet = trimmed.toUpperCase().includes("NO BET");
           return (
@@ -432,8 +492,6 @@ function FormattedBestBets({ content, t }) {
             }}>{trimmed}</div>
           );
         }
-
-        // VALUE LINE
         if (/^VALUE LINE:/i.test(trimmed)) {
           return (
             <div key={i} style={{
@@ -444,8 +502,6 @@ function FormattedBestBets({ content, t }) {
             }}>{trimmed}</div>
           );
         }
-
-        // CONFIDENCE
         if (/^CONFIDENCE:/i.test(trimmed)) {
           const isHigh = trimmed.toUpperCase().includes("HIGH");
           const isMed = trimmed.toUpperCase().includes("MEDIUM");
@@ -453,17 +509,13 @@ function FormattedBestBets({ content, t }) {
             <div key={i} style={{
               fontSize: 11, fontWeight: 700,
               color: isHigh ? "#10b981" : isMed ? "#f59e0b" : t.textMuted,
-              marginBottom: 4, fontFamily: "'Inter', sans-serif",
+              marginBottom: 4,
             }}>{trimmed}</div>
           );
         }
-
-        // Divider
         if (trimmed === "---") {
           return <div key={i} style={{ height: 1, background: t.border, marginTop: 12, marginBottom: 4 }} />;
         }
-
-        // Daily summary
         if (/^DAILY SUMMARY/i.test(trimmed)) {
           return (
             <div key={i} style={{
@@ -474,7 +526,6 @@ function FormattedBestBets({ content, t }) {
             }}>{trimmed}</div>
           );
         }
-
         return (
           <div key={i} style={{ fontSize: 12, color: t.textAnalysis, lineHeight: 1.7, marginBottom: 3 }}>
             {trimmed}
@@ -485,203 +536,57 @@ function FormattedBestBets({ content, t }) {
   );
 }
 
-// ── BEST BETS MODAL ──
-function BestBetsModal({ games, onClose, t }) {
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [generatedAt, setGeneratedAt] = useState(null);
-
-  const buildGamesContext = useCallback((games) => {
-    return games.slice(0, 20).map((g, i) =>
-      `GAME ${i + 1}: ${g.awayTeam} @ ${g.homeTeam} (${g.sport})
-TIME: ${g.time}
-CONTEXT: ${g.label}
-NEUTRAL SITE: ${isNeutralSite(g) ? "YES" : "No"}
-OPEN: ${fmt(g.openSpread)} | CURRENT: ${fmt(g.currentSpread)} | MOVE: ${fmt(g.currentSpread - g.openSpread)} pts
-TOTAL: ${g.total}
-PUBLIC: ${g.publicPct}% on ${g.homeTeam}
-RLM: ${getRLM(g) ? `YES — sharp on ${getSharpSide(g)}` : "No"}
-BOOKS: ${g.bookLines ? g.bookLines.map(b => `${b.book.replace("DraftKings","DK").replace("FanDuel","FD").replace("BetMGM","MGM").replace("Caesars","CZR")} ${fmt(b.spread)}`).join(" | ") : "N/A"}`
-    ).join("\n\n");
-  }, []);
-
-  useEffect(() => {
-    const run = async () => {
-      setLoading(true);
-      try {
-        const context = buildGamesContext(games);
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system: BEST_BETS_PROMPT,
-            messages: [{ role: "user", content: `Here are today's games. Identify the top 5 best betting opportunities:\n\n${context}` }],
-          }),
-        });
-        const data = await res.json();
-        const reply = data?.content?.[0]?.text || data?.error?.message || "Unable to generate Best Bets.";
-        setContent(reply);
-        setGeneratedAt(new Date());
-      } catch (err) {
-        setContent(`Error: ${err.message}`);
-      }
-      setLoading(false);
-    };
-    run();
-  }, [games, buildGamesContext]);
-
+// ── TODAY'S ANALYSIS FORMATTED OUTPUT ──
+function FormattedTodayAnalysis({ content, t }) {
+  const lines = content.split("\n");
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed", inset: 0, zIndex: 1000,
-        background: t.overlay,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "16px",
-        animation: "fadeIn 0.2s ease",
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          width: "100%", maxWidth: 520,
-          maxHeight: "88vh", height: "88vh",
-          background: t.bgModal,
-          borderRadius: 16,
-          border: `1px solid ${t.border}`,
-          display: "flex", flexDirection: "column",
-          overflow: "hidden",
-          boxShadow: "0 25px 60px rgba(0,0,0,0.5)",
-          animation: "slideUp 0.25s ease",
-        }}
-      >
-        {/* Header */}
-        <div style={{
-          padding: "14px 16px", borderBottom: `1px solid ${t.border}`,
-          background: t.bgHeader, flexShrink: 0,
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-        }}>
-          <div>
-            <div style={{
-              fontFamily: "'Barlow Condensed', sans-serif",
-              fontSize: 22, fontWeight: 900, letterSpacing: "0.08em",
-              color: t.text, textTransform: "uppercase",
-            }}>
-              🏆 Best Bets Today
-            </div>
-            <div style={{ fontSize: 9, color: t.textFaint, fontFamily: "'Inter', sans-serif", marginTop: 2 }}>
-              {loading ? "Analyzing all games..." : `${games.length} games scanned · ${generatedAt?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: t.bgButton, border: `1px solid ${t.border}`,
-              color: t.textMuted, borderRadius: 20, width: 28, height: 28,
-              cursor: "pointer", fontSize: 13,
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >✕</button>
-        </div>
+    <div style={{ fontFamily: "'Inter', sans-serif" }}>
+      {lines.map((line, i) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={i} style={{ height: 8 }} />;
 
-        {/* Content */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", background: t.bg }}>
-          {loading ? (
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 14 }}>
-              <Spinner t={t} />
-              <div style={{ fontSize: 13, color: t.textMuted, fontFamily: "'Inter', sans-serif", textAlign: "center" }}>
-                Scanning {games.length} games across all sports...
-                <br />
-                <span style={{ fontSize: 11, color: t.textFaint }}>This takes about 10 seconds</span>
-              </div>
-            </div>
-          ) : (
-            <div style={{
-              background: t.bgAnalysis, border: `1px solid ${t.borderHeader}`,
-              borderRadius: 8, padding: "14px 16px",
+        // Sport section headers like "NBA" "NCAAB" "MLB"
+        const isSportHeader = /^(NBA|NCAAB|MLB|NHL|NFL)$/i.test(trimmed);
+        if (isSportHeader) {
+          const color = getSportColor(trimmed.toUpperCase());
+          return (
+            <div key={i} style={{
+              fontSize: 11, fontWeight: 800, color,
+              letterSpacing: "0.15em", textTransform: "uppercase",
+              marginTop: i === 0 ? 0 : 18, marginBottom: 8,
+              paddingBottom: 5, borderBottom: `2px solid ${color}33`,
+              display: "flex", alignItems: "center", gap: 6,
             }}>
-              <FormattedBestBets content={content} t={t} />
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: color }} />
+              {trimmed}
             </div>
-          )}
-        </div>
+          );
+        }
 
-        {/* Footer note */}
-        {!loading && (
-          <div style={{
-            padding: "8px 16px", borderTop: `1px solid ${t.border}`,
-            background: t.bgHeader, flexShrink: 0,
-            fontSize: 10, color: t.textFaint, fontFamily: "'Inter', sans-serif",
-            textAlign: "center",
-          }}>
-            Tap any game in the list for a full deep-dive analysis
+        // Market outlook header
+        if (/^MARKET OUTLOOK/i.test(trimmed)) {
+          return (
+            <div key={i} style={{
+              fontSize: 11, fontWeight: 700, color: "#2563eb",
+              letterSpacing: "0.08em", textTransform: "uppercase",
+              marginTop: 18, marginBottom: 8,
+              paddingBottom: 5, borderBottom: `1px solid ${t.border}`,
+            }}>{trimmed}</div>
+          );
+        }
+
+        return (
+          <div key={i} style={{ fontSize: 13, color: t.textAnalysis, lineHeight: 1.85, marginBottom: 4 }}>
+            {trimmed}
           </div>
-        )}
-      </div>
+        );
+      })}
     </div>
   );
 }
 
-// ── ANALYSIS MODAL ──
-function AnalysisModal({ game, onClose, t }) {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [autoRan, setAutoRan] = useState(false);
-  const bottomRef = useRef(null);
-
-  const buildContext = useCallback((g) => `
-GAME: ${g.awayTeam} @ ${g.homeTeam}
-SPORT: ${g.sport}
-CONTEXT: ${g.label}
-NEUTRAL SITE: ${isNeutralSite(g) ? "YES — home court advantage does NOT apply" : "No"}
-TOURNAMENT/PLAYOFF GAME: ${isPlayoff(g) ? "YES — single elimination or playoff format" : "No"}
-TIME: ${g.time}
-OPENING SPREAD: ${g.homeTeam} ${fmt(g.openSpread)}
-CURRENT SPREAD: ${g.homeTeam} ${fmt(g.currentSpread)}
-LINE MOVE: ${fmt(g.currentSpread - g.openSpread)} pts
-TOTAL: ${g.total}
-PUBLIC BETTING: ${g.publicPct}% on ${g.homeTeam}
-RLM DETECTED: ${getRLM(g) ? `YES — sharp action likely on ${getSharpSide(g)}` : "No"}
-BOOK LINES: ${g.bookLines ? g.bookLines.map(b => `${b.book} ${fmt(b.spread)}`).join(", ") : "Not available"}
-`.trim(), []);
-
-  const sendMessage = useCallback(async (userText, history) => {
-    setLoading(true);
-    const newHistory = [...history, { role: "user", content: userText }];
-    setMessages(newHistory);
-    try {
-      const res = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ system: SHARP_SYSTEM_PROMPT, messages: newHistory }),
-      });
-      const data = await res.json();
-      const reply = data?.content?.[0]?.text || data?.error?.message || data?.error || "Unable to generate analysis.";
-      setMessages([...newHistory, { role: "assistant", content: reply }]);
-    } catch (err) {
-      setMessages([...newHistory, { role: "assistant", content: `Error: ${err.message}` }]);
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (game && !autoRan) {
-      setAutoRan(true);
-      sendMessage(`${buildContext(game)}\n\nRun a full sharp analysis on this matchup.`, []);
-    }
-  }, [game, autoRan, sendMessage, buildContext]);
-
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
-
-  const handleSend = () => {
-    if (!input.trim() || loading) return;
-    setInput("");
-    sendMessage(`${buildContext(game)}\n\nFollow-up: ${input}`, messages);
-  };
-
-  if (!game) return null;
-  const sportColor = getSportColor(game.sport);
-
+// ── SHARED MODAL SHELL ──
+function ModalShell({ onClose, t, header, children, footer }) {
   return (
     <div
       onClick={onClose}
@@ -689,8 +594,7 @@ BOOK LINES: ${g.bookLines ? g.bookLines.map(b => `${b.book} ${fmt(b.spread)}`).j
         position: "fixed", inset: 0, zIndex: 1000,
         background: t.overlay,
         display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "16px",
-        animation: "fadeIn 0.2s ease",
+        padding: "16px", animation: "fadeIn 0.2s ease",
       }}
     >
       <div
@@ -706,6 +610,237 @@ BOOK LINES: ${g.bookLines ? g.bookLines.map(b => `${b.book} ${fmt(b.spread)}`).j
           animation: "slideUp 0.25s ease",
         }}
       >
+        {header}
+        {children}
+        {footer}
+      </div>
+    </div>
+  );
+}
+
+// ── TODAY'S ANALYSIS MODAL ──
+function TodayAnalysisModal({ games, onClose, t }) {
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [generatedAt, setGeneratedAt] = useState(null);
+
+  const buildContext = useCallback((games) => {
+    const bySport = {};
+    games.forEach(g => {
+      if (!bySport[g.sport]) bySport[g.sport] = [];
+      bySport[g.sport].push(g);
+    });
+    return Object.entries(bySport).map(([sport, gs]) =>
+      `${sport} — ${gs.length} games\n` + gs.map(g =>
+        `  ${g.awayTeam} @ ${g.homeTeam} | Open: ${fmt(g.openSpread)} Current: ${fmt(g.currentSpread)} Move: ${fmt(g.currentSpread - g.openSpread)} | Public: ${g.publicPct}% on ${g.homeTeam} | RLM: ${getRLM(g) ? "YES" : "No"} | ${g.label}`
+      ).join("\n")
+    ).join("\n\n");
+  }, []);
+
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true);
+      try {
+        const context = buildContext(games);
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system: TODAY_ANALYSIS_PROMPT,
+            messages: [{ role: "user", content: `Here is today's full slate of games. Write the morning market briefing:\n\n${context}` }],
+          }),
+        });
+        const data = await res.json();
+        const reply = data?.content?.[0]?.text || "Unable to generate analysis.";
+        setContent(reply);
+        setGeneratedAt(new Date());
+      } catch (err) {
+        setContent(`Error: ${err.message}`);
+      }
+      setLoading(false);
+    };
+    run();
+  }, [games, buildContext]);
+
+  return (
+    <ModalShell onClose={onClose} t={t}
+      header={
+        <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.border}`, background: t.bgHeader, flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 900, letterSpacing: "0.08em", color: t.text, textTransform: "uppercase" }}>
+              📋 Today's Analysis
+            </div>
+            <div style={{ fontSize: 9, color: t.textFaint, fontFamily: "'Inter', sans-serif", marginTop: 2 }}>
+              {loading ? "Generating market briefing..." : `${games.length} games · ${generatedAt?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: t.bgButton, border: `1px solid ${t.border}`, color: t.textMuted, borderRadius: 20, width: 28, height: 28, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        </div>
+      }
+      footer={!loading && (
+        <div style={{ padding: "8px 16px", borderTop: `1px solid ${t.border}`, background: t.bgHeader, flexShrink: 0, fontSize: 10, color: t.textFaint, fontFamily: "'Inter', sans-serif", textAlign: "center" }}>
+          Tap any game in the list for a full deep-dive analysis
+        </div>
+      )}
+    >
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", background: t.bg }}>
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 14 }}>
+            <Spinner t={t} />
+            <div style={{ fontSize: 13, color: t.textMuted, fontFamily: "'Inter', sans-serif", textAlign: "center" }}>
+              Reading today's full slate...
+              <br /><span style={{ fontSize: 11, color: t.textFaint }}>Generating sport-by-sport briefing</span>
+            </div>
+          </div>
+        ) : (
+          <div style={{ background: t.bgAnalysis, border: `1px solid ${t.borderHeader}`, borderRadius: 8, padding: "14px 16px" }}>
+            <FormattedTodayAnalysis content={content} t={t} />
+          </div>
+        )}
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── BEST BETS MODAL ──
+function BestBetsModal({ games, onClose, t }) {
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [generatedAt, setGeneratedAt] = useState(null);
+
+  const buildGamesContext = useCallback((games) => {
+    return games.slice(0, 20).map((g, i) =>
+      `GAME ${i + 1}: ${g.awayTeam} @ ${g.homeTeam} (${g.sport})
+TIME: ${g.time} | CONTEXT: ${g.label}
+NEUTRAL: ${isNeutralSite(g) ? "YES" : "No"} | OPEN: ${fmt(g.openSpread)} | CURRENT: ${fmt(g.currentSpread)} | MOVE: ${fmt(g.currentSpread - g.openSpread)}
+PUBLIC: ${g.publicPct}% on ${g.homeTeam} | RLM: ${getRLM(g) ? `YES — sharp on ${getSharpSide(g)}` : "No"}
+BOOKS: ${g.bookLines ? g.bookLines.map(b => `${b.book.replace("DraftKings","DK").replace("FanDuel","FD").replace("BetMGM","MGM").replace("Caesars","CZR")} ${fmt(b.spread)}${b.juice ? `(${fmtJuice(b.juice)})` : ""}`).join(" | ") : "N/A"}`
+    ).join("\n\n");
+  }, []);
+
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system: BEST_BETS_PROMPT,
+            messages: [{ role: "user", content: `Here are today's games. Identify the top 5 best betting opportunities:\n\n${buildGamesContext(games)}` }],
+          }),
+        });
+        const data = await res.json();
+        setContent(data?.content?.[0]?.text || "Unable to generate Best Bets.");
+        setGeneratedAt(new Date());
+      } catch (err) {
+        setContent(`Error: ${err.message}`);
+      }
+      setLoading(false);
+    };
+    run();
+  }, [games, buildGamesContext]);
+
+  return (
+    <ModalShell onClose={onClose} t={t}
+      header={
+        <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.border}`, background: t.bgHeader, flexShrink: 0, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 900, letterSpacing: "0.08em", color: t.text, textTransform: "uppercase" }}>
+              🏆 Best Bets Today
+            </div>
+            <div style={{ fontSize: 9, color: t.textFaint, fontFamily: "'Inter', sans-serif", marginTop: 2 }}>
+              {loading ? "Analyzing all games..." : `${games.length} games scanned · ${generatedAt?.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: t.bgButton, border: `1px solid ${t.border}`, color: t.textMuted, borderRadius: 20, width: 28, height: 28, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        </div>
+      }
+      footer={!loading && (
+        <div style={{ padding: "8px 16px", borderTop: `1px solid ${t.border}`, background: t.bgHeader, flexShrink: 0, fontSize: 10, color: t.textFaint, fontFamily: "'Inter', sans-serif", textAlign: "center" }}>
+          Tap any game in the list for a full deep-dive analysis
+        </div>
+      )}
+    >
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", background: t.bg }}>
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 14 }}>
+            <Spinner t={t} />
+            <div style={{ fontSize: 13, color: t.textMuted, fontFamily: "'Inter', sans-serif", textAlign: "center" }}>
+              Scanning {games.length} games across all sports...
+              <br /><span style={{ fontSize: 11, color: t.textFaint }}>This takes about 10 seconds</span>
+            </div>
+          </div>
+        ) : (
+          <div style={{ background: t.bgAnalysis, border: `1px solid ${t.borderHeader}`, borderRadius: 8, padding: "14px 16px" }}>
+            <FormattedBestBets content={content} t={t} />
+          </div>
+        )}
+      </div>
+    </ModalShell>
+  );
+}
+
+// ── ANALYSIS MODAL ──
+function AnalysisModal({ game, onClose, t }) {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [autoRan, setAutoRan] = useState(false);
+  const bottomRef = useRef(null);
+
+  const buildContext = useCallback((g) => `
+GAME: ${g.awayTeam} @ ${g.homeTeam}
+SPORT: ${g.sport} | CONTEXT: ${g.label}
+NEUTRAL SITE: ${isNeutralSite(g) ? "YES — home court does NOT apply" : "No"}
+TOURNAMENT: ${isPlayoff(g) ? "YES" : "No"}
+TIME: ${g.time}
+OPEN: ${fmt(g.openSpread)} | CURRENT: ${fmt(g.currentSpread)} | MOVE: ${fmt(g.currentSpread - g.openSpread)} pts
+TOTAL: ${g.total} | PUBLIC: ${g.publicPct}% on ${g.homeTeam}
+RLM: ${getRLM(g) ? `YES — sharp on ${getSharpSide(g)}` : "No"}
+BOOKS: ${g.bookLines ? g.bookLines.map(b => `${b.book} ${fmt(b.spread)}${b.juice ? `(${fmtJuice(b.juice)})` : ""}`).join(" | ") : "N/A"}
+`.trim(), []);
+
+  const sendMessage = useCallback(async (userText, history) => {
+    setLoading(true);
+    const newHistory = [...history, { role: "user", content: userText }];
+    setMessages(newHistory);
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ system: SHARP_SYSTEM_PROMPT, messages: newHistory }),
+      });
+      const data = await res.json();
+      const reply = data?.content?.[0]?.text || data?.error?.message || "Unable to generate analysis.";
+      setMessages([...newHistory, { role: "assistant", content: reply }]);
+    } catch (err) {
+      setMessages([...newHistory, { role: "assistant", content: `Error: ${err.message}` }]);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (game && !autoRan) {
+      setAutoRan(true);
+      sendMessage(`${buildContext(game)}\n\nRun a full sharp analysis.`, []);
+    }
+  }, [game, autoRan, sendMessage, buildContext]);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
+
+  const handleSend = () => {
+    if (!input.trim() || loading) return;
+    setInput("");
+    sendMessage(`${buildContext(game)}\n\nFollow-up: ${input}`, messages);
+  };
+
+  if (!game) return null;
+  const sportColor = getSportColor(game.sport);
+
+  return (
+    <ModalShell onClose={onClose} t={t}
+      header={
         <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.border}`, background: t.bgHeader, flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
             <div>
@@ -720,13 +855,7 @@ BOOK LINES: ${g.bookLines ? g.bookLines.map(b => `${b.book} ${fmt(b.spread)}`).j
               </div>
               <ContextBadge game={game} />
             </div>
-            <button onClick={onClose} style={{
-              background: t.bgButton, border: `1px solid ${t.border}`,
-              color: t.textMuted, borderRadius: 20, width: 28, height: 28,
-              cursor: "pointer", fontSize: 13,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0, marginLeft: 8,
-            }}>✕</button>
+            <button onClick={onClose} style={{ background: t.bgButton, border: `1px solid ${t.border}`, color: t.textMuted, borderRadius: 20, width: 28, height: 28, cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: 8 }}>✕</button>
           </div>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
             {[
@@ -743,64 +872,43 @@ BOOK LINES: ${g.bookLines ? g.bookLines.map(b => `${b.book} ${fmt(b.spread)}`).j
             ))}
           </div>
         </div>
-
-        <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", background: t.bg }}>
-          {messages.length === 0 && !loading && (
-            <div style={{ textAlign: "center", color: t.textMuted, marginTop: 30 }}>
-              <div style={{ fontSize: 24, marginBottom: 6 }}>🎯</div>
-              <div style={{ fontSize: 12, fontFamily: "'Inter', sans-serif" }}>Loading analysis...</div>
-            </div>
-          )}
-          {messages.filter(m => m.role === "assistant").map((m, i) => (
-            <div key={i} style={{ background: t.bgAnalysis, border: `1px solid ${t.borderHeader}`, borderRadius: 8, padding: "12px 14px", marginBottom: 12 }}>
-              <FormattedAnalysis content={m.content} t={t} />
-            </div>
-          ))}
-          {loading && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, color: t.textMuted, padding: "8px 0" }}>
-              <Spinner t={t} />
-              <span style={{ fontSize: 12, fontFamily: "'Inter', sans-serif" }}>Analyzing matchup data...</span>
-            </div>
-          )}
-          <div ref={bottomRef} />
-        </div>
-
-        <div style={{
-          padding: "8px 12px", borderTop: `1px solid ${t.border}`,
-          background: t.bgHeader, flexShrink: 0,
-          display: "flex", alignItems: "center", gap: 8,
-          position: "sticky", bottom: 0, zIndex: 10,
-        }}>
+      }
+      footer={
+        <div style={{ padding: "8px 12px", borderTop: `1px solid ${t.border}`, background: t.bgHeader, flexShrink: 0, display: "flex", alignItems: "center", gap: 8, position: "sticky", bottom: 0, zIndex: 10 }}>
           <input
-            type="text"
-            value={input}
+            type="text" value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleSend(); } }}
             placeholder="Ask a follow-up..."
-            style={{
-              flex: 1, background: t.bgInput, border: `1px solid ${t.borderInput}`,
-              borderRadius: 20, padding: "8px 14px", color: t.text, fontSize: 14,
-              fontFamily: "'Inter', sans-serif", outline: "none", lineHeight: 1.4,
-              minWidth: 0, maxWidth: "calc(100% - 46px)",
-            }}
+            style={{ flex: 1, background: t.bgInput, border: `1px solid ${t.borderInput}`, borderRadius: 20, padding: "8px 14px", color: t.text, fontSize: 14, fontFamily: "'Inter', sans-serif", outline: "none", lineHeight: 1.4, minWidth: 0, maxWidth: "calc(100% - 46px)" }}
             onFocus={e => e.target.style.borderColor = "#3b82f6"}
             onBlur={e => e.target.style.borderColor = t.borderInput}
           />
-          <button
-            onClick={handleSend}
-            disabled={loading || !input.trim()}
-            style={{
-              width: 34, height: 34, borderRadius: "50%", border: "none",
-              background: loading || !input.trim() ? t.bgButton : "#2563eb",
-              color: loading || !input.trim() ? t.textFaint : "#fff",
-              fontSize: 15, cursor: loading || !input.trim() ? "not-allowed" : "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "all 0.15s", flexShrink: 0,
-            }}
-          >↑</button>
+          <button onClick={handleSend} disabled={loading || !input.trim()} style={{ width: 34, height: 34, borderRadius: "50%", border: "none", background: loading || !input.trim() ? t.bgButton : "#2563eb", color: loading || !input.trim() ? t.textFaint : "#fff", fontSize: 15, cursor: loading || !input.trim() ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s", flexShrink: 0 }}>↑</button>
         </div>
+      }
+    >
+      <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px", background: t.bg }}>
+        {messages.length === 0 && !loading && (
+          <div style={{ textAlign: "center", color: t.textMuted, marginTop: 30 }}>
+            <div style={{ fontSize: 24, marginBottom: 6 }}>🎯</div>
+            <div style={{ fontSize: 12, fontFamily: "'Inter', sans-serif" }}>Loading analysis...</div>
+          </div>
+        )}
+        {messages.filter(m => m.role === "assistant").map((m, i) => (
+          <div key={i} style={{ background: t.bgAnalysis, border: `1px solid ${t.borderHeader}`, borderRadius: 8, padding: "12px 14px", marginBottom: 12 }}>
+            <FormattedAnalysis content={m.content} t={t} />
+          </div>
+        ))}
+        {loading && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: t.textMuted, padding: "8px 0" }}>
+            <Spinner t={t} />
+            <span style={{ fontSize: 12, fontFamily: "'Inter', sans-serif" }}>Analyzing matchup data...</span>
+          </div>
+        )}
+        <div ref={bottomRef} />
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
@@ -808,6 +916,7 @@ export default function SharplineApp() {
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null);
   const [showBestBets, setShowBestBets] = useState(false);
+  const [showTodayAnalysis, setShowTodayAnalysis] = useState(false);
   const [sportFilter, setSportFilter] = useState("ALL");
   const [view, setView] = useState("all");
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -843,6 +952,7 @@ export default function SharplineApp() {
           { key: "basketball_nba", label: "NBA" },
           { key: "basketball_ncaab", label: "NCAAB" },
           { key: "baseball_mlb", label: "MLB" },
+          { key: "icehockey_nhl", label: "NHL" },
         ];
         const allGames = [];
         for (const sport of sports) {
@@ -856,17 +966,19 @@ export default function SharplineApp() {
             const bookLines = [];
             g.bookmakers?.forEach(book => {
               const spreadMkt = book.markets?.find(m => m.key === "spreads");
-              const homePoint = spreadMkt?.outcomes?.find(o => o.name === g.home_team)?.point;
+              const homeOutcome = spreadMkt?.outcomes?.find(o => o.name === g.home_team);
+              const homePoint = homeOutcome?.point;
+              const juice = homeOutcome?.price;
               if (homePoint !== undefined) {
                 allSpreads.push(homePoint);
-                bookLines.push({ book: book.title, spread: homePoint });
+                bookLines.push({ book: book.title, spread: homePoint, juice: juice ?? null });
               }
             });
             const homeSpread = allSpreads.length > 0
               ? allSpreads.reduce((a, b) => a + b, 0) / allSpreads.length : 0;
             const firstBook = g.bookmakers?.[0];
             const totalMkt = firstBook?.markets?.find(m => m.key === "totals");
-            const total = totalMkt?.outcomes?.[0]?.point ?? (sport.label === "MLB" ? 8.5 : 220);
+            const total = totalMkt?.outcomes?.[0]?.point ?? (sport.label === "MLB" ? 8.5 : sport.label === "NHL" ? 5.5 : 220);
             const isNCAAT = sport.label === "NCAAB" && new Date(g.commence_time) > new Date("2025-03-18");
             allGames.push({
               id: g.id, sport: sport.label,
@@ -877,7 +989,7 @@ export default function SharplineApp() {
               total, publicPct: Math.floor(Math.random() * 45) + 30,
               commenceTime: g.commence_time,
               time: fmtGameTime(g.commence_time),
-              label: isNCAAT ? "NCAA Tournament — Neutral Site" : sport.label === "MLB" ? "MLB Regular Season" : sport.label,
+              label: isNCAAT ? "NCAA Tournament — Neutral Site" : `${sport.label} Regular Season`,
             });
           });
         }
@@ -953,14 +1065,30 @@ export default function SharplineApp() {
           )}
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {/* Best Bets Button */}
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          {/* Today's Analysis */}
+          <button
+            onClick={() => setShowTodayAnalysis(true)}
+            disabled={games.length === 0}
+            style={{
+              background: games.length === 0 ? t.bgButton : t.bgButtonActive,
+              border: `1px solid ${games.length === 0 ? t.border : "#3b82f644"}`,
+              borderRadius: 6, padding: "5px 9px",
+              cursor: games.length === 0 ? "not-allowed" : "pointer",
+              display: "flex", alignItems: "center", gap: 4,
+              fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
+              color: games.length === 0 ? t.textFaint : (isDark ? "#93c5fd" : "#1d4ed8"),
+              fontFamily: "'Inter', sans-serif", transition: "all 0.2s",
+            }}
+          >📋 Today</button>
+
+          {/* Best Bets */}
           <button
             onClick={() => setShowBestBets(true)}
             disabled={games.length === 0}
             style={{
               background: games.length === 0 ? t.bgButton : "linear-gradient(135deg, #f59e0b, #d97706)",
-              border: "none", borderRadius: 6, padding: "5px 10px",
+              border: "none", borderRadius: 6, padding: "5px 9px",
               cursor: games.length === 0 ? "not-allowed" : "pointer",
               display: "flex", alignItems: "center", gap: 4,
               fontSize: 10, fontWeight: 700, letterSpacing: "0.04em",
@@ -969,9 +1097,7 @@ export default function SharplineApp() {
               boxShadow: games.length > 0 ? "0 2px 8px rgba(217,119,6,0.3)" : "none",
               transition: "all 0.2s",
             }}
-          >
-            🏆 Best Bets
-          </button>
+          >🏆 Bets</button>
 
           {rlmCount > 0 && (
             <div
@@ -979,31 +1105,19 @@ export default function SharplineApp() {
               style={{
                 fontSize: 10, color: "#d97706", fontWeight: 700,
                 background: t.rlmBg, border: `1px solid ${t.rlmBorder}`,
-                padding: "4px 8px", borderRadius: 4, cursor: "pointer",
-                fontFamily: "'Inter', sans-serif", letterSpacing: "0.04em",
+                padding: "4px 7px", borderRadius: 4, cursor: "pointer",
+                fontFamily: "'Inter', sans-serif",
               }}
-            >⚡ {rlmCount} RLM{rlmCount > 1 ? "s" : ""}</div>
+            >⚡{rlmCount}</div>
           )}
           <button
             onClick={() => setIsDark(prev => !prev)}
-            style={{
-              background: t.bgButton, border: `1px solid ${t.border}`,
-              borderRadius: 4, padding: "5px 8px", cursor: "pointer",
-              fontSize: 13, display: "flex", alignItems: "center",
-              color: t.textMuted, transition: "all 0.2s",
-            }}
+            style={{ background: t.bgButton, border: `1px solid ${t.border}`, borderRadius: 4, padding: "5px 7px", cursor: "pointer", fontSize: 12, color: t.textMuted }}
           >{isDark ? "☀️" : "🌙"}</button>
           <button
-            onClick={loadGames}
-            disabled={fetching}
-            style={{
-              background: t.bgButton, border: `1px solid ${t.border}`,
-              color: fetching ? t.textFaint : t.textMuted, borderRadius: 4,
-              padding: "5px 8px", fontSize: 10, cursor: fetching ? "not-allowed" : "pointer",
-              display: "flex", alignItems: "center", gap: 4,
-              letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'Inter', sans-serif",
-            }}
-          >{fetching ? <><Spinner t={t} /><span>...</span></> : "↺"}</button>
+            onClick={loadGames} disabled={fetching}
+            style={{ background: t.bgButton, border: `1px solid ${t.border}`, color: fetching ? t.textFaint : t.textMuted, borderRadius: 4, padding: "5px 7px", fontSize: 10, cursor: fetching ? "not-allowed" : "pointer", display: "flex", alignItems: "center", fontFamily: "'Inter', sans-serif" }}
+          >{fetching ? <Spinner t={t} /> : "↺"}</button>
         </div>
       </header>
 
@@ -1025,7 +1139,7 @@ export default function SharplineApp() {
           ))}
         </div>
         <div style={{ width: 1, height: 16, background: t.border, flexShrink: 0 }} />
-        {["ALL", "NCAAB", "NBA", "NFL", "MLB"].map(s => (
+        {["ALL", "NCAAB", "NBA", "NFL", "MLB", "NHL"].map(s => (
           <button key={s} onClick={() => { setSportFilter(s); setSelectedGame(null); }} style={{
             padding: "4px 10px", borderRadius: 4, border: "none", fontSize: 10,
             fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: "0.06em",
@@ -1053,24 +1167,9 @@ export default function SharplineApp() {
         ))}
       </div>
 
-      {/* BEST BETS MODAL */}
-      {showBestBets && (
-        <BestBetsModal
-          games={games}
-          onClose={() => setShowBestBets(false)}
-          t={t}
-        />
-      )}
-
-      {/* ANALYSIS MODAL */}
-      {selectedGame && (
-        <AnalysisModal
-          key={selectedGame.id}
-          game={selectedGame}
-          onClose={() => setSelectedGame(null)}
-          t={t}
-        />
-      )}
+      {showTodayAnalysis && <TodayAnalysisModal games={games} onClose={() => setShowTodayAnalysis(false)} t={t} />}
+      {showBestBets && <BestBetsModal games={games} onClose={() => setShowBestBets(false)} t={t} />}
+      {selectedGame && <AnalysisModal key={selectedGame.id} game={selectedGame} onClose={() => setSelectedGame(null)} t={t} />}
     </div>
   );
 }
